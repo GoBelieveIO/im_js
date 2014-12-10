@@ -4,7 +4,6 @@
     <title>GameService</title>
   </head>
   <body>
-    <script src="/test.js"></script>
     <script src="/engine.io.js"></script>
     <script src="/json2.js"></script>
     <script src="/im.js"></script>
@@ -29,16 +28,20 @@
               } else if (state == IMService.STATE_UNCONNECTED) {
                  console.log("im unconnected");
               }
+          },
+          onReset: function() {
+              console.log("reset");
           }
       }
       
-      var im = new IMService("192.168.2.33", 5000, 100);
+      var im = new IMService("192.168.2.33", 5000, 100, observer, true);
       im.start()
 
       var msg = {sender:100, receiver:100, content:"11", msgLocalID:1000}
 
       //connectState == STATE_CONNECTING
       var r = im.sendPeerMessage(msg);
+      //r == false
       console.log("send message result:", r);
 
       function send() {

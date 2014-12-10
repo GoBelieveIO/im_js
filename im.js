@@ -18,6 +18,7 @@ function IMService(host, port, uid, observer, forceSocket) {
     this.connectState = IMService.STATE_UNCONNECTED;
     this.seq = 0;
     this.stopped = true;
+    this.rst = false
     //sending message
     this.messages = {}
 }
@@ -44,6 +45,7 @@ IMService.prototype.start = function () {
     }
     console.log("start im service");
     this.stopped = false;
+    this.rst = false;
     this.connect()
 }
 
@@ -62,7 +64,7 @@ IMService.prototype.stop = function () {
 }
 
 IMService.prototype.callStateObserver = function () {
-    if (this.observer && "onConnectState" in this.observer) {
+    if (this.observer != null && "onConnectState" in this.observer) {
         this.observer.onConnectState(this.connectState)
     }
 }
@@ -70,6 +72,10 @@ IMService.prototype.callStateObserver = function () {
 IMService.prototype.connect = function () {
     if (this.stopped) {
         console.log("im service stopped");
+        return;
+    }
+    if (this.rst) {
+        console.log("im service reseted");
         return;
     }
     if (this.socket != null) {
@@ -145,13 +151,16 @@ IMService.prototype.onMessage = function (data) {
         var ack = obj.body;
         if (ack in this.messages) {
             var msg = this.messages[ack];
-            if (this.observer && "handleMessageACK" in this.observer){
+            if (this.observer != null && "handleMessageACK" in this.observer){
                 this.observer.handleMessageACK(msg.msgLocalID, msg.receiver)
             }
             delete this.messages.ack
         }
     } else if (obj.cmd == IMService.MSG_RST) {
-        
+        this.rst = true
+        if (this.observer != null && "onReset" in this.observer){
+            this.observer.onReset();
+        }        
     } else {
         console.log("message command:" + obj.cmd);
     }
@@ -177,12 +186,20 @@ IMService.prototype.onClose = function() {
     this.socket = null;
     this.connectState = IMService.STATE_UNCONNECTED;
     this.callStateObserver();
+    
+    for (var seq in this.messages) {
+        var msg = this.messages[seq];
+        if (this.observer != null && "handleMessageFailure" in this.observer){
+            this.observer.handleMessageFailure(msg.msgLocalID, msg.receiver)
+        }
+    }
+    this.messages = {}
 
     var self = this;
     f = function() {
         self.connect();
     }
-    setTimeout(f, 100);
+    setTimeout(f, 400);
 }
 
 IMService.prototype.send = function (cmd, body) {
@@ -210,7 +227,6 @@ IMService.prototype.sendPeerMessage = function (msg) {
     this.messages[this.seq] = msg;
     return true;
 }
-
 
 IMService.Utf8ArrayToStr = function (array) {
     var out, i, len, c;

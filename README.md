@@ -25,10 +25,13 @@
 ## IMService Observer
 
 - onConnectState
-    - callback when im service connect state changed
+    - callback when im service connection state changed
     - **Parameters**
       - `state`:im service's connect state
 
+- onReset
+    - callback when current uid logined in other place
+    
 - handlePeerMessage
     - callback when im service received a peer message
     - **Parameters**
@@ -41,7 +44,7 @@
       - `receiver` (`Number`): receiver's uid
 
 - handleMessageFailure
-    - callback when im service can't send message
+    - callback when im service can't send out the message
     - **Parameters**
       - `msgLocalID` (`Number`): message local id
       - `receiver` (`Number`): receiver's uid
@@ -50,7 +53,7 @@
 ##example
 
 
-```html
+```
     <script src="/engine.io.js"></script>
     <script src="/json2.js"></script>
     <script src="/im.js"></script>
@@ -75,6 +78,9 @@
               } else if (state == IMService.STATE_UNCONNECTED) {
                  console.log("im unconnected");
               }
+          },
+          onReset: function() {
+              console.log("reset");
           }
       }
       
