@@ -2,13 +2,22 @@ function IMService(host, port, uid, observer, forceSocket) {
     this.host = host;
     this.port = port;
     this.uid = uid;
-    this.observer = observer;
+    if (observer == undefined) {
+        this.observer = null;
+    } else {
+        this.observer = observer;
+    }
+    if (forceSocket == undefined) {
+        this.forceSocket = false;
+    } else {
+        this.forceSocket = forceSocket;
+    }
+
     this.socket = null;
     this.connectFailCount = 0;
     this.connectState = IMService.STATE_UNCONNECTED;
     this.seq = 0;
     this.stopped = true;
-    this.forceSocket = forceSocket;
     //sending message
     this.messages = {}
 }
@@ -141,6 +150,8 @@ IMService.prototype.onMessage = function (data) {
             }
             delete this.messages.ack
         }
+    } else if (obj.cmd == IMService.MSG_RST) {
+        
     } else {
         console.log("message command:" + obj.cmd);
     }
