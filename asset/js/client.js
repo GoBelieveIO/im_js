@@ -4,11 +4,6 @@ var users;
 var base = 1000;
 var msgLocalID=0;
 var increase = 25;
-var reg = /^[a-zA-Z0-9_\u4e00-\u9fa5]+$/;
-var LOGIN_ERROR = "There is no server to log in, please wait.";
-var LENGTH_ERROR = "Name/Channel is too long or too short. 20 character max.";
-var NAME_ERROR = "Bad character in Name/Channel. Can only have letters, numbers, Chinese characters, and '_'";
-var DUPLICATE_ERROR = "Please change your name to login.";
 
 util = {
     urlRE: /https?:\/\/([-\w\.]+)+(:\d+)?(\/([^\s]*(\?\S+)?)?)?/g,
@@ -46,7 +41,7 @@ util = {
 function scrollDown(base) {
     window.scrollTo(0, base);
     $("#entry").focus();
-};
+}
 
 // add message on board
 function addMessage(from, target, text, time) {
@@ -73,7 +68,7 @@ function addMessage(from, target, text, time) {
     $("#chatHistory").append(messageElement);
     base += increase;
     scrollDown(base);
-};
+}
 
 // show tip
 function tip(type, name) {
@@ -191,23 +186,7 @@ $(document).ready(function () {
         }
     };
 
-    var im = new IMService("192.168.2.33", 5000, 0, observer, false);
-
-
-    //update user list
-    //pomelo.on('onAdd', function (data) {
-    //    var user = data.user;
-    //    tip('online', user);
-    //    addUser(user);
-    //});
-    //
-    ////update user list
-    //pomelo.on('onLeave', function (data) {
-    //    var user = data.user;
-    //    tip('offline', user);
-    //    removeUser(user);
-    //});
-
+    var im = new IMService("172.25.1.111", 5000, 0, observer, false);
 
     //deal with login button click.
     $("#login").click(function () {
