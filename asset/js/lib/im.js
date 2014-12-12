@@ -154,7 +154,7 @@ IMService.prototype.onMessage = function (data) {
             if (this.observer != null && "handleMessageACK" in this.observer){
                 this.observer.handleMessageACK(msg.msgLocalID, msg.receiver)
             }
-            delete this.messages.ack
+            delete this.messages[ack]
         }
     } else if (obj.cmd == IMService.MSG_RST) {
         this.rst = true
