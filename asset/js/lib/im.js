@@ -1,4 +1,4 @@
-function IMService(host, port, uid, observer, forceSocket) {
+function IMService(host, port, uid, observer) {
     this.host = host;
     this.port = port;
     this.uid = uid;
@@ -7,18 +7,13 @@ function IMService(host, port, uid, observer, forceSocket) {
     } else {
         this.observer = observer;
     }
-    if (forceSocket == undefined) {
-        this.forceSocket = false;
-    } else {
-        this.forceSocket = forceSocket;
-    }
 
     this.socket = null;
     this.connectFailCount = 0;
     this.connectState = IMService.STATE_UNCONNECTED;
     this.seq = 0;
     this.stopped = true;
-    this.rst = false
+    this.rst = false;
     //sending message
     this.messages = {}
 }
@@ -35,7 +30,7 @@ IMService.MSG_ACK = 5;
 IMService.MSG_RST = 6;
 IMService.MSG_PEER_ACK = 9;
 
-IMService.PLATFORM_ID = 3
+IMService.PLATFORM_ID = 3;
 
 
 IMService.prototype.start = function () {
@@ -47,7 +42,7 @@ IMService.prototype.start = function () {
     this.stopped = false;
     this.rst = false;
     this.connect()
-}
+};
 
 IMService.prototype.stop = function () {
     if (this.stopped) {
@@ -61,13 +56,13 @@ IMService.prototype.stop = function () {
     console.log("close socket");
     this.socket.close();
     this.socket = null;
-}
+};
 
 IMService.prototype.callStateObserver = function () {
     if (this.observer != null && "onConnectState" in this.observer) {
         this.observer.onConnectState(this.connectState)
     }
-}
+};
 
 IMService.prototype.connect = function () {
     if (this.stopped) {
@@ -83,14 +78,14 @@ IMService.prototype.connect = function () {
         return;
     }
 
-    console.log("connect host:" + this.host + " port:" + this.port);    
+    console.log("connect host:" + this.host + " port:" + this.port);
     this.connectState = IMService.STATE_CONNECTING;
     this.callStateObserver();
 
-    if (this.forceSocket) {
+    if ("WebSocket" in window) {
         this.socket = eio({hostname:this.host, port:this.port, transports:["websocket"]});
     } else {
-        this.socket = eio({hostname:this.host, port:this.port});
+        this.socket = eio({hostname:this.host, port:this.port, transports:["polling"]});
     }
 
     var self = this;
@@ -102,7 +97,7 @@ IMService.prototype.connect = function () {
         self.onError(err);
     });
     console.log("this:" + typeof this);
-}
+};
 
 IMService.prototype.onOpen = function () {
     console.log("socket opened");
@@ -118,13 +113,14 @@ IMService.prototype.onOpen = function () {
     this.seq = 0;
     this.connectState = IMService.STATE_CONNECTED;
     this.callStateObserver();
-}
+};
 
 IMService.prototype.onMessage = function (data) {
     var text = null;
-    if (data instanceof ArrayBuffer) {
-        text = IMService.Utf8ArrayToStr(new Int8Array(data));
-    } else if (typeof data == "string") {
+    //if (data instanceof ArrayBuffer) {
+    //    text = IMService.Utf8ArrayToStr(new Int8Array(data));
+    //} else
+    if (typeof data == "string") {
         text = data;
     } else {
         console.log("invalid data type:" + typeof data);
@@ -136,8 +132,7 @@ IMService.prototype.onMessage = function (data) {
         msg.content = obj.body.content
         msg.sender = obj.body.sender;
         msg.receiver = obj.body.receiver;
-        console.log("im message sender:" + msg.sender + 
-                    " receiver:" + msg.receiver);
+        console.log("im message sender:" + msg.sender +" receiver:" + msg.receiver);
         msg.timestamp = obj.body.timestamp;
         if (this.observer != null && "handlePeerMessage" in this.observer) {
             this.observer.handlePeerMessage(msg);
@@ -164,10 +159,10 @@ IMService.prototype.onMessage = function (data) {
     } else {
         console.log("message command:" + obj.cmd);
     }
-}
+};
 
 IMService.prototype.onError = function (err) {
-    console.log("err:" + err)
+    console.log("err:" + err);
     this.socket.close();
     this.socket = null;
     this.connectFailCount++;
@@ -177,9 +172,9 @@ IMService.prototype.onError = function (err) {
     var self = this;
     f = function() {
         self.connect()
-    }
+    };
     setTimeout(f, this.connectFailCount*1000);
-}
+};
 
 IMService.prototype.onClose = function() {
     console.log("socket disconnect");
@@ -193,14 +188,14 @@ IMService.prototype.onClose = function() {
             this.observer.handleMessageFailure(msg.msgLocalID, msg.receiver)
         }
     }
-    this.messages = {}
+    this.messages = {};
 
     var self = this;
     f = function() {
         self.connect();
-    }
+    };
     setTimeout(f, 400);
-}
+};
 
 IMService.prototype.send = function (cmd, body) {
     if (this.socket == null) {
@@ -211,14 +206,14 @@ IMService.prototype.send = function (cmd, body) {
     var text = JSON.stringify(obj);
     this.socket.send(text);
     return true
-}
+};
 
 IMService.prototype.sendPeerMessage = function (msg) {
     if (this.connectState != IMService.STATE_CONNECTED) {
         return false;
     }
     var obj = {"sender": msg.sender, "receiver": msg.receiver, 
-               "msgid": msg.msgLocalID, "content": msg.content}
+               "msgid": msg.msgLocalID, "content": msg.content};
     var r = this.send(IMService.MSG_IM, obj);
     if (!r) {
         return false;
@@ -226,7 +221,7 @@ IMService.prototype.sendPeerMessage = function (msg) {
 
     this.messages[this.seq] = msg;
     return true;
-}
+};
 
 IMService.Utf8ArrayToStr = function (array) {
     var out, i, len, c;
@@ -260,4 +255,4 @@ IMService.Utf8ArrayToStr = function (array) {
     }
 
     return out;
-}
+};

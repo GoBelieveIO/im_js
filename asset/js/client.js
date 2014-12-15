@@ -152,41 +152,41 @@ $(document).ready(function () {
 
     observer = {
         handlePeerMessage: function (msg) {
-            console.log("msg sender:", msg.sender, " receiver:", msg.receiver, " content:", msg.content, " timestamp:", msg.timestamp);
+            //console.log("msg sender:", msg.sender, " receiver:", msg.receiver, " content:", msg.content, " timestamp:", msg.timestamp);
             addMessage(msg.sender, msg.receiver, msg.content);
             $("#chatHistory").show();
             //if (msg.sender !== username)
             //    tip('message', msg.sender);
         },
         handleMessageACK: function(msgLocalID, receiver) {
-            console.log("message ack local id:", msgLocalID, " receiver:", receiver)
+            //console.log("message ack local id:", msgLocalID, " receiver:", receiver)
         },
         handleMessageFailure: function(msgLocalID, receiver) {
-            console.log("message fail local id:", msgLocalID, " receiver:", receiver)
+            //console.log("message fail local id:", msgLocalID, " receiver:", receiver)
         },
         onConnectState: function(state) {
             if (state == IMService.STATE_CONNECTED) {
-                console.log("im connected");
+                //console.log("im connected");
                 // 连接成功
                 setName();
                 showChat();
             } else if (state == IMService.STATE_CONNECTING) {
-                console.log("im connecting");
+                //console.log("im connecting");
             } else if (state == IMService.STATE_CONNECTFAIL) {
-                console.log("im connect fail");
+                //console.log("im connect fail");
             } else if (state == IMService.STATE_UNCONNECTED) {
-                console.log("im unconnected");
+                //console.log("im unconnected");
                 //showLogin();
             }
         },
         onReset: function() {
-            console.log("reset");
+            //console.log("reset");
             //handle disconect message, occours when the client is disconnect with servers
             //showLogin();
         }
     };
 
-    var im = new IMService("172.25.1.111", 5000, 0, observer, false);
+    var im = new IMService("192.168.2.33", 5000, 0, observer, false);
 
     //deal with login button click.
     $("#login").click(function () {
