@@ -7,6 +7,7 @@ cd ${app_dir} || exit
 unset GIT_DIR
 git pull
 cp -f configs/config_development.py ./config.py
+cp -f configs/config_development.py push/config.py
 
 mkdir -p ${log_dir}
 

@@ -21,21 +21,22 @@ MYSQL_AUTOCOMMIT = True
 MYSQL_CHARSET = 'utf8'
 
 # 游戏中心数据库
-MYSQL_USER = "ngds_user"
-MYSQL_PASSWD = "ngds_user.mysql"
-MYSQL_DATABASE = "im"
+MYSQL_GC_USER = "ngds_user"
+MYSQL_GC_PASSWD = "ngds_user.mysql"
+MYSQL_GC_DATABASE = "smart_push"
 
-REDIS_HOST = "172.25.1.111"
+REDIS_HOST = "172.25.1.154"
 REDIS_PORT = 6379
-REDIS_DB = 5
+REDIS_DB = 0
 REDIS_PASSWORD = None
 
 # 日志目录
 LOG_DIR = os.path.join(APP_ROOT, '.logs')
 
 # host,port,user,password,db,auto_commit,charset
-MYSQL = (MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWD, MYSQL_DATABASE, MYSQL_AUTOCOMMIT, MYSQL_CHARSET)
+MYSQL_GC = (MYSQL_HOST, MYSQL_PORT, MYSQL_GC_USER, MYSQL_GC_PASSWD, MYSQL_GC_DATABASE, MYSQL_AUTOCOMMIT, MYSQL_CHARSET)
 # 默认数据库
+MYSQL = MYSQL_GC
 
 APP_MODE = 'Development'
 
@@ -59,3 +60,14 @@ CELERY_ACCEPT_CONTENT = ['json']
 ALLOW_IP = []
 
 SENTRY_DSN = 'http://6b8ef299d61644139dffbbfcf252c2d2:c1af608e46714e55bd7831e3e8d6d490@172.25.1.155:9000/3'
+
+NAME = "测试"
+
+ANDROID_APP_ID = 8
+ANDROID_APP_SECRET = 'sVDIlIiDUm7tWPYWhi6kfNbrqui3ez44'
+
+IOS_APP_ID = 9
+IOS_APP_SECRET = '0WiCxAU1jh76SbgaaFC7qIaBPm2zkyM1'
+
+URL = 'http://dev.api.gameservice.com:8000/push-v1'
+CONTENT = "您收到一条新信息，快来看看吧。"
