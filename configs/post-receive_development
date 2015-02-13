@@ -1,8 +1,8 @@
 #!/bin/sh
-project="im_api"
+project="im.gameservice.com"
 app_dir="/data/wwwroot/${project}"
 log_dir="/data/logs/${project}"
-image="im_python_dev"
+image="58.22.120.52:5000/library/python_dev"
 cd ${app_dir} || exit
 unset GIT_DIR
 git pull
