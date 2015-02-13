@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from flask import request
+from flask import request, Blueprint
 from flask import Flask
 from flask import g
 from functools import wraps
