@@ -7,10 +7,11 @@ cd ${app_dir} || exit
 unset GIT_DIR
 git pull
 cp -f configs/config_production.py ./config.py
+cp -f configs/config_development.py push/config.py
 
 mkdir -p ${log_dir}
 mkdir -p "${log_dir}/detail"
 
-docker restart ${project} || docker run -d --restart=always --name=${project} --net=host -v ${log_dir}:/logs -v ${log_dir}/detail:/data/logs/api.gameservice.com -v ${app_dir}/configs/supervisord.conf:/etc/supervisord.conf -v ${app_dir}:/app ${image} /usr/local/python/bin/supervisord
+docker restart ${project} || docker run -d --restart=always --name=${project} --net=host -v ${log_dir}:/logs -v ${log_dir}/detail:/data/logs/im.gameservice.com -v ${app_dir}/configs/supervisord.conf:/etc/supervisord.conf -v ${app_dir}:/app ${image} /usr/local/python/bin/supervisord
 
 exit 0

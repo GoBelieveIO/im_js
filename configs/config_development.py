@@ -40,23 +40,6 @@ MYSQL = MYSQL_GC
 
 APP_MODE = 'Development'
 
-
-# -- celery --#
-# format redis://:password@hostname:port/db_number
-if REDIS_PASSWORD:
-    BROKER_URL = 'redis://:%s@%s:%s/6' % (REDIS_PASSWORD, REDIS_HOST, REDIS_PORT)
-else:
-    BROKER_URL = 'redis://%s:%s/6' % (REDIS_HOST, REDIS_PORT)
-
-CELERY_RESULT_BACKEND = BROKER_URL
-
-CELERY_TIMEZONE = 'Asia/Shanghai'
-CELERY_ENABLE_UTC = False
-
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_ACCEPT_CONTENT = ['json']
-
 ALLOW_IP = []
 
 SENTRY_DSN = 'http://6b8ef299d61644139dffbbfcf252c2d2:c1af608e46714e55bd7831e3e8d6d490@172.25.1.155:9000/3'
