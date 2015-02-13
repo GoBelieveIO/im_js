@@ -53,7 +53,7 @@
 ##example
 
 
-```
+
     <script src="/engine.io.js"></script>
     <script src="/json2.js"></script>
     <script src="/im.js"></script>
@@ -103,6 +103,6 @@
 
       setTimeout(send, 2000)
     </script>
-```
+
 
 

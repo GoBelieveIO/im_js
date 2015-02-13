@@ -186,7 +186,7 @@ $(document).ready(function () {
         }
     };
 
-    var im = new IMService("192.168.2.33", 5000, 0, observer, false);
+    var im = new IMService("192.168.2.33", 5555, 0, observer, false);
 
     //deal with login button click.
     $("#login").click(function () {

@@ -1,0 +1,15 @@
+#!/bin/sh
+project="im.gameservice.com"
+app_dir="/data/wwwroot/${project}"
+log_dir="/data/logs/${project}"
+image="58.22.120.52:5000/library/python_dev"
+cd ${app_dir} || exit
+unset GIT_DIR
+git pull
+cp -f configs/config_development.py ./config.py
+
+mkdir -p ${log_dir}
+
+docker restart ${project} || docker run -d --restart=always --name=${project} --net=host -v ${log_dir}:/logs -v ${app_dir}/configs/supervisord.conf:/etc/supervisord.conf -v ${app_dir}:/app ${image} /usr/local/python/bin/supervisord
+
+exit 0
