@@ -12,12 +12,14 @@ from main import init_app
 from utils.sentry import Sentry
 import markdown
 import os
+import demo
 
 app = Flask(__name__)
 app.config.from_object(config)
 if not app.debug:
     app.use_x_sendfile = True
 
+app.register_blueprint(demo.app)
 
 @app.route('/')
 def index():

@@ -44,13 +44,13 @@ ALLOW_IP = []
 
 SENTRY_DSN = ''
 
-NAME = "测试"
 
-ANDROID_APP_ID = 8
-ANDROID_APP_SECRET = 'sVDIlIiDUm7tWPYWhi6kfNbrqui3ez44'
+IM_URL = "http://127.0.0.1:23002"
 
-IOS_APP_ID = 9
-IOS_APP_SECRET = '0WiCxAU1jh76SbgaaFC7qIaBPm2zkyM1'
+ANDROID_APP_ID = 11035
+ANDROID_APP_SECRET = 'HS5NVruwDJxFwUPEdzqo7gBrQCSFsIhA'
 
-URL = 'http://dev.api.gameservice.com:8000/push-v1'
-CONTENT = "您收到一条新信息，快来看看吧。"
+IOS_APP_ID = 11036
+IOS_APP_SECRET = 'X608P9EM7BBsIA9Sx076SQQVmvK7KMhv'
+
+
