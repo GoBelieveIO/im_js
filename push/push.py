@@ -39,6 +39,7 @@ def receive_offline_message():
         if not item:
             continue
         _, msg = item
+        logging.debug("offline message:%s", msg)
         obj = json.loads(msg)
         appid = obj["appid"]
         receiver = obj["receiver"]

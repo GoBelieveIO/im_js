@@ -18,6 +18,18 @@ import npush
 
 mysql = None
 
+class AppManager:
+    def __init__(self):
+        self.apps = {}
+        
+    def set_app(self, appid, app):
+        self.apps[appid] = app
+
+    def get_app(self, appid):
+        return self.apps[appid] if self.apps.has_key(appid) else None
+
+app_manager = AppManager()
+
 class APNSConnectionManager:
     def __init__(self):
         self.apns_connections = {}
@@ -51,25 +63,57 @@ class APNSConnectionManager:
 
 apns_manager = APNSConnectionManager()
 
-def get_cer(appid):
-    for i in range(2):
-        try:
-            sql = "select c.cer as cer, c.pkey as pkey from client, client_certificate as c where client.app_id=%s and client.id =c.client_id"
-            cursor = mysql.execute(sql, appid)
-            obj = cursor.fetchone()
 
-            cer = obj["cer"]
-            pkey = obj["pkey"]
-            return cer, pkey
-        except Exception, e:
-            logging.info("exception:%s", str(e))
-            continue
+class DB:
+    @classmethod
+    def get_app(self, appid):
+        for i in range(2):
+            try:
+                sql = "select name, platform_identity from client, app where app.id=%s and client.app_id =app.id"
+                cursor = mysql.execute(sql, appid)
+                obj = cursor.fetchone()
+         
+                name = obj["name"]
+                package_name = obj["platform_identity"]
+                return name, package_name
+            except Exception, e:
+                logging.info("exception:%s", str(e))
+                continue
+         
+        return None, None
+    
+    @classmethod
+    def get_cer(self, appid):
+        for i in range(2):
+            try:
+                sql = "select c.cer as cer, c.pkey as pkey from client, client_certificate as c where client.app_id=%s and client.id =c.client_id"
+                cursor = mysql.execute(sql, appid)
+                obj = cursor.fetchone()
+     
+                cer = obj["cer"]
+                pkey = obj["pkey"]
+                return cer, pkey
+            except Exception, e:
+                logging.info("exception:%s", str(e))
+                continue
+     
+        return None, None
 
-    return None, None
+def get_app(appid):
+    app = app_manager.get_app(appid)
+    if not app:
+        name, package_name = DB.get_app(appid)
+        if name and package_name:
+            app_manager.set_app(appid, (name, package_name))
+    else:
+        name, package_name = app
+
+    return name, package_name
+
     
 def connect_gateway(appid):
     logging.debug("appid:%s", appid)
-    cer, key = get_cer(appid)
+    cer, key = DB.get_cer(appid)
     cer_file = "/tmp/%s_android.cer"%appid
     key_file = "/tmp/%s_android.key"%appid
 
@@ -88,17 +132,19 @@ def connect_gateway(appid):
     return conn
 
 
-def android_payload(content):
+def android_payload(name, package_name, content):
     obj = {}
     obj["push_type"] = 1
     obj["is_ring"] = True
     obj["is_vibrate"] = True
+    if name:
+        obj["title"] = name
+    if package_name:
+        obj["package_name"] = package_name
+    obj["app_params"] = {}
 
     try:
-        logging.info("content:%s", content)
         content = json.loads(content)
-        logging.info("content:%s", content)
-        obj = {}
         if content.has_key("text"):
             obj["content"] = content["text"]
         elif content.has_key("audio"):
@@ -108,7 +154,6 @@ def android_payload(content):
         else:
             obj["content"] = u"您收到一条新信息，快来看看吧。"
 
-        obj["app_params"] = {}
         return json.dumps(obj)
     except ValueError, e:
         logging.info("im message content is't json format")
@@ -118,7 +163,6 @@ def android_payload(content):
         logging.info("im message content is't dict json object")
         obj["content"] = u"您收到一条新信息，快来看看吧。"
         return json.dumps(obj)
-        
 
 
 def send(obj):
@@ -130,7 +174,9 @@ def send(obj):
         logging.warn("invalid token:%s", token)
         return
 
-    payload = android_payload(content)
+    name, package_name = get_app(appid)
+
+    payload = android_payload(name, package_name, content)
     for i in range(2):
         if i == 1:
             logging.warn("resend notification")
