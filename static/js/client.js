@@ -186,7 +186,7 @@ $(document).ready(function () {
         }
     };
 
-    var im = new IMService("127.0.0.1", 5555, 0, observer, false);
+    var im = new IMService("im.gameservice.com", 13890, 0, observer, false);
 
     //deal with login button click.
     $("#login").click(function () {
