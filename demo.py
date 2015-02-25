@@ -53,7 +53,7 @@ def login(uid, uname):
     if res.status_code != 200:
         return None
     obj = json.loads(res.text)
-    return obj["token"]
+    return obj["data"]["token"]
 
 @app.route("/auth/token", methods=["POST"])
 def access_token():
