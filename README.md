@@ -84,10 +84,11 @@
           }
       }
       
-      var im = new IMService("192.168.2.33", 5000, 100, observer, true);
+      var im = new IMService(observer);
+      im.accessToken = "????";
       im.start()
 
-      var msg = {sender:100, receiver:100, content:"11", msgLocalID:1000}
+      var msg = {sender:100, receiver:200, content:"11", msgLocalID:1000}
 
       //connectState == STATE_CONNECTING
       var r = im.sendPeerMessage(msg);
