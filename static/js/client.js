@@ -186,15 +186,35 @@ $(document).ready(function () {
         }
     };
 
-    var im = new IMService("im.gameservice.com", 13890, 0, observer, false);
+    var im = new IMService(observer);
 
     //deal with login button click.
     $("#login").click(function () {
         username = parseInt($("#loginUser").val());
-        receiver = parseInt($("#receiver").val());
-        addUser(receiver);
-        im.uid = username;
-        im.start();
+
+        $.ajax({
+	    url: "auth/token",
+	    dataType: 'json',
+            type: 'POST',
+            contentType: "application/json",
+            data:JSON.stringify({uid:username}),
+            success: function(result, status, xhr) {
+                if (status == "success") {
+                    console.log("login success:", result.token);
+                    receiver = parseInt($("#receiver").val());
+                    addUser(receiver);
+                    im.access_token = result.token;
+                    im.start();
+                } else {
+                    console.log("login error status:", status);
+                    alert("login fail");
+                }
+	    },
+	    error : function(xhr, err) {
+	        console.log("login err:", err, xhr.status);
+                alert("login fail");
+	    }
+        });
     });
 
     //deal with chat mode.

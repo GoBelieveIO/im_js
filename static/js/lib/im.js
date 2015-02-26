@@ -1,7 +1,7 @@
-function IMService(host, port, uid, observer) {
-    this.host = host;
-    this.port = port;
-    this.uid = uid;
+function IMService(observer) {
+    this.host = "im.gameservice.com";
+    this.port = 13890;
+    this.accessToken = "";
     if (observer == undefined) {
         this.observer = null;
     } else {
@@ -23,12 +23,14 @@ IMService.STATE_CONNECTING = 1;
 IMService.STATE_CONNECTED = 2;
 IMService.STATE_CONNECTFAIL = 3;
 
-IMService.MSG_AUTH = 2;
+
 IMService.MSG_AUTH_STATUS = 3;
 IMService.MSG_IM = 4;
 IMService.MSG_ACK = 5;
 IMService.MSG_RST = 6;
 IMService.MSG_PEER_ACK = 9;
+IMService.MSG_AUTH_TOKEN = 15;
+
 
 IMService.PLATFORM_ID = 3;
 
@@ -99,6 +101,16 @@ IMService.prototype.connect = function () {
     console.log("this:" + typeof this);
 };
 
+IMService.prototype.guid = function () {
+  function s4() {
+    return Math.floor((1 + Math.random()) * 0x10000)
+      .toString(16)
+      .substring(1);
+  }
+  return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+    s4() + '-' + s4() + s4() + s4();
+}
+
 IMService.prototype.onOpen = function () {
     console.log("socket opened");
     var self = this;
@@ -108,7 +120,7 @@ IMService.prototype.onOpen = function () {
     this.socket.on('close', function() {
         self.onClose();
     });
-    this.send(IMService.MSG_AUTH, {"uid": this.uid, "platform_id": IMService.PLATFORM_ID});
+    this.send(IMService.MSG_AUTH_TOKEN, {"access_token": this.access_token, "platform_id": IMService.PLATFORM_ID, "device_id": this.guid()});
     this.connectFailCount = 0;
     this.seq = 0;
     this.connectState = IMService.STATE_CONNECTED;
@@ -117,9 +129,6 @@ IMService.prototype.onOpen = function () {
 
 IMService.prototype.onMessage = function (data) {
     var text = null;
-    //if (data instanceof ArrayBuffer) {
-    //    text = IMService.Utf8ArrayToStr(new Int8Array(data));
-    //} else
     if (typeof data == "string") {
         text = data;
     } else {
