@@ -6,10 +6,10 @@
 - **constructor**
     - Initializes the client
     - **Parameters**
-      - `host` (`String`):  im server hostname
-      - `port` (`Number`): im server port
-      - `uid` (`Number`): user id
       - `observer` (`Object`): optional, im service observer
+
+- accessToken
+    - property must be set before start
 
 - start
     - Start im service
