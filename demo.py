@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from flask import request, Blueprint
+from flask import render_template, send_from_directory
 from flask import Flask
 from flask import g
 from functools import wraps
@@ -17,7 +18,8 @@ import requests
 import config
 
 
-app = Blueprint('demo', __name__)
+app = Flask(__name__)
+app.debug = config.DEBUG
 
 
 def INVALID_PARAM():
@@ -45,12 +47,17 @@ def make_response(status_code, data = None):
 def login(uid, uname):
     url = config.IM_URL + "/auth/grant"
     obj = {"uid":uid, "user_name":uname}
-    basic = base64.b64encode(str(config.ANDROID_APP_ID) + ":" + config.ANDROID_APP_SECRET)
+    
+    m = md5.new(config.APP_SECRET)
+    secret = m.hexdigest()
+
+    basic = base64.b64encode(str(config.APP_ID) + ":" + secret)
     headers = {'Content-Type': 'application/json; charset=UTF-8',
                'Authorization': 'Basic ' + basic}
      
     res = requests.post(url, data=json.dumps(obj), headers=headers)
     if res.status_code != 200:
+        print res
         return None
     obj = json.loads(res.text)
     return obj["data"]["token"]
@@ -72,6 +79,16 @@ def access_token():
 
     obj = {"token":token}
     return make_response(200, obj)
+
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(app.root_path,
+                               'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 def init_logger(logger):
     root = logger

@@ -178,11 +178,6 @@ $(document).ready(function () {
                 //console.log("im unconnected");
                 //showLogin();
             }
-        },
-        onReset: function() {
-            //console.log("reset");
-            //handle disconect message, occours when the client is disconnect with servers
-            //showLogin();
         }
     };
 
@@ -203,7 +198,7 @@ $(document).ready(function () {
                     console.log("login success:", result.token);
                     receiver = parseInt($("#receiver").val());
                     addUser(receiver);
-                    im.access_token = result.token;
+                    im.accessToken = result.token;
                     im.start();
                 } else {
                     console.log("login error status:", status);

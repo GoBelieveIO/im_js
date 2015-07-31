@@ -1,5 +1,5 @@
 function IMService(observer) {
-    this.host = "im.gameservice.com";
+    this.host = "imnode.gobelieve.io";
     this.port = 13890;
     this.accessToken = "";
     if (observer == undefined) {
@@ -13,7 +13,6 @@ function IMService(observer) {
     this.connectState = IMService.STATE_UNCONNECTED;
     this.seq = 0;
     this.stopped = true;
-    this.rst = false;
     //sending message
     this.messages = {}
 }
@@ -42,7 +41,6 @@ IMService.prototype.start = function () {
     }
     console.log("start im service");
     this.stopped = false;
-    this.rst = false;
     this.connect()
 };
 
@@ -52,6 +50,7 @@ IMService.prototype.stop = function () {
         return;
     }
     console.log("stop im service");
+    this.stopped = true;
     if (this.socket == null) {
         return;
     }
@@ -69,10 +68,6 @@ IMService.prototype.callStateObserver = function () {
 IMService.prototype.connect = function () {
     if (this.stopped) {
         console.log("im service stopped");
-        return;
-    }
-    if (this.rst) {
-        console.log("im service reseted");
         return;
     }
     if (this.socket != null) {
@@ -120,7 +115,7 @@ IMService.prototype.onOpen = function () {
     this.socket.on('close', function() {
         self.onClose();
     });
-    this.send(IMService.MSG_AUTH_TOKEN, {"access_token": this.access_token, "platform_id": IMService.PLATFORM_ID, "device_id": this.guid()});
+    this.send(IMService.MSG_AUTH_TOKEN, {"access_token": this.accessToken, "platform_id": IMService.PLATFORM_ID, "device_id": this.guid()});
     this.connectFailCount = 0;
     this.seq = 0;
     this.connectState = IMService.STATE_CONNECTED;
@@ -160,11 +155,11 @@ IMService.prototype.onMessage = function (data) {
             }
             delete this.messages[ack]
         }
-    } else if (obj.cmd == IMService.MSG_RST) {
-        this.rst = true
-        if (this.observer != null && "onReset" in this.observer){
-            this.observer.onReset();
-        }        
+    } else if (obj.cmd == IMService.MSG_PEER_ACK) {
+        var msg = obj.body;
+        if (this.observer != null && "handleMessageRemoteACK" in this.observer){
+            this.observer.handleMessageRemoteACK(msg.msgid, msg.sender)
+        }
     } else {
         console.log("message command:" + obj.cmd);
     }
