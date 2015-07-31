@@ -182,7 +182,7 @@ $(document).ready(function () {
     };
 
     var im = new IMService(observer);
-
+    im.host = host
     //deal with login button click.
     $("#login").click(function () {
         username = parseInt($("#loginUser").val());

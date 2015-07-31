@@ -83,7 +83,7 @@ def access_token():
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index.html', host=config.HOST)
 
 @app.route('/favicon.ico')
 def favicon():
