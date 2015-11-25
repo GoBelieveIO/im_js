@@ -15,12 +15,7 @@ function IMService(observer) {
     this.stopped = true;
     //sending message
     this.messages = {}
-
-    this.device_id = IMService.guid();
 }
-
-IMService.HEADSIZE = 12;
-IMService.VERSION = 1;
 
 IMService.STATE_UNCONNECTED = 0;
 IMService.STATE_CONNECTING = 1;
@@ -98,9 +93,18 @@ IMService.prototype.connect = function () {
     this.socket.on('error', function(err) {
         self.onError(err);
     });
+    console.log("this:" + typeof this);
 };
 
-
+IMService.prototype.guid = function () {
+  function s4() {
+    return Math.floor((1 + Math.random()) * 0x10000)
+      .toString(16)
+      .substring(1);
+  }
+  return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+    s4() + '-' + s4() + s4() + s4();
+}
 
 IMService.prototype.onOpen = function () {
     console.log("socket opened");
@@ -111,8 +115,7 @@ IMService.prototype.onOpen = function () {
     this.socket.on('close', function() {
         self.onClose();
     });
-
-    this.sendAuth();
+    this.send(IMService.MSG_AUTH_TOKEN, {"access_token": this.accessToken, "platform_id": IMService.PLATFORM_ID, "device_id": this.guid()});
     this.connectFailCount = 0;
     this.seq = 0;
     this.connectState = IMService.STATE_CONNECTED;
@@ -120,54 +123,31 @@ IMService.prototype.onOpen = function () {
 };
 
 IMService.prototype.onMessage = function (data) {
+    var text = null;
     if (typeof data == "string") {
-        console.log("invalid data type:" + typeof data);
-        return;
-    } else if (!(data instanceof ArrayBuffer)) {
+        text = data;
+    } else {
         console.log("invalid data type:" + typeof data);
         return;
     }
-
-    var buf = new Uint8Array(data);
-    var len = ntohl(buf, 0);
-    var seq = ntohl(buf, 4)
-    var cmd = buf[8];
-
-    if (len + IMService.HEADSIZE < buf.length) {
-        console.log("invalid data length:" + buf.length + " " + len+IMService.HEADSIZE);
-        return;
-    }
-
-    var pos = IMService.HEADSIZE;
-    if (cmd == IMService.MSG_IM) {
+    var obj = JSON.parse(text);
+    if (obj.cmd == IMService.MSG_IM) {
         var msg = {}
-
-        msg.sender = ntoh64(buf, pos);
-        pos += 8;
-
-        msg.receiver = ntoh64(buf, pos);
-        pos += 8;
-        
-        msg.timestamp = ntohl(buf, pos);
-        pos += 4;
-
-        //msgid
-        pos += 4;
-
-        msg.content = IMService.Utf8ArrayToStr(new Uint8Array(data, IMService.HEADSIZE + 24, len-24));
-
-        console.log("im message sender:" + msg.sender +" receiver:" + msg.receiver + "content:" + msg.content);
-
+        msg.content = obj.body.content
+        msg.sender = obj.body.sender;
+        msg.receiver = obj.body.receiver;
+        console.log("im message sender:" + msg.sender +" receiver:" + msg.receiver);
+        msg.timestamp = obj.body.timestamp;
         if (this.observer != null && "handlePeerMessage" in this.observer) {
             this.observer.handlePeerMessage(msg);
         }
 
-        this.sendACK(seq);
-    } else if(cmd == IMService.MSG_AUTH_STATUS) {
-        var status = ntohl(buf, pos);
-        console.log("auth status:" + status);
-    } else if (cmd == IMService.MSG_ACK) {
-        var ack = ntohl(buf, pos);
+        this.send(IMService.MSG_ACK, obj.seq);
+        
+    } else if(obj.cmd == IMService.MSG_AUTH_STATUS) {
+        console.log("auth status:" + obj.body.status);
+    } else if (obj.cmd == IMService.MSG_ACK) {
+        var ack = obj.body;
         if (ack in this.messages) {
             var msg = this.messages[ack];
             if (this.observer != null && "handleMessageACK" in this.observer){
@@ -175,8 +155,13 @@ IMService.prototype.onMessage = function (data) {
             }
             delete this.messages[ack]
         }
+    } else if (obj.cmd == IMService.MSG_PEER_ACK) {
+        var msg = obj.body;
+        if (this.observer != null && "handleMessageRemoteACK" in this.observer){
+            this.observer.handleMessageRemoteACK(msg.msgid, msg.sender)
+        }
     } else {
-        console.log("message command:" + cmd);
+        console.log("message command:" + obj.cmd);
     }
 };
 
@@ -216,62 +201,14 @@ IMService.prototype.onClose = function() {
     setTimeout(f, 400);
 };
 
-IMService.prototype.sendACK = function(ack) {
-    var arrayBuffer = new ArrayBuffer(4);
-    var buf = new Uint8Array(arrayBuffer);
-    htonl(buf, 0, ack);
-    this.send(IMService.MSG_ACK, buf);
-}
-
-IMService.prototype.sendAuth = function() {
-    var arrayBuffer = new ArrayBuffer(1024);
-    var buf = new Uint8Array(arrayBuffer);
-    var pos = 0;
-    buf[pos] = IMService.PLATFORM_ID;
-    pos++;
-    
-    var t = IMService.StrToUtf8Array(this.accessToken);
-    buf[pos] = t.length;
-    pos++;
-    buf.set(t, pos);
-    pos += t.length;
-
-    t = IMService.StrToUtf8Array(this.device_id);
-    buf[pos] = t.length;
-    pos++;
-    buf.set(t, pos);
-    pos += t.length;
-
-    var body = new Uint8Array(arrayBuffer, 0, pos);
-    this.send(IMService.MSG_AUTH_TOKEN, body);
-}
-
-//typeof body == uint8array
 IMService.prototype.send = function (cmd, body) {
     if (this.socket == null) {
         return false;
     }
     this.seq++;
-
-    var arrayBuffer = new ArrayBuffer(IMService.HEADSIZE+body.length);
-    var buf = new Uint8Array(arrayBuffer);
-    var pos = 0;
-    htonl(buf, pos, body.length);
-    pos += 4;
-    htonl(buf, pos, this.seq);
-    pos += 4;
-
-    buf[pos] = cmd
-    pos++;
-    buf[pos] = IMService.VERSION;
-    pos++;
-    buf.fill(2, pos, pos + 2);
-    pos += 2;
-
-    buf.set(body, pos);
-    pos += body.length;
-
-    this.socket.send(arrayBuffer);
+    var obj = {"seq": this.seq, "cmd": cmd, "body": body};
+    var text = JSON.stringify(obj);
+    this.socket.send(text);
     return true
 };
 
@@ -279,23 +216,9 @@ IMService.prototype.sendPeerMessage = function (msg) {
     if (this.connectState != IMService.STATE_CONNECTED) {
         return false;
     }
-
-    var content = IMService.StrToUtf8Array(msg.content);
-    var arrayBuffer = new ArrayBuffer(24+content.length);
-    var buf = new Uint8Array(arrayBuffer);
-    var pos = 0;
-
-    hton64(buf, pos, msg.sender);
-    pos += 8;
-    hton64(buf, pos, msg.receiver);
-    pos += 8;
-    htonl(buf, pos, msg.timestamp)
-    pos += 4;
-    htonl(buf, pos, msg.msgLocalID);
-    pos += 4;
-    buf.set(content, pos);
-
-    var r = this.send(IMService.MSG_IM, buf);
+    var obj = {"sender": msg.sender, "receiver": msg.receiver, 
+               "msgid": msg.msgLocalID, "content": msg.content};
+    var r = this.send(IMService.MSG_IM, obj);
     if (!r) {
         return false;
     }
@@ -303,8 +226,6 @@ IMService.prototype.sendPeerMessage = function (msg) {
     this.messages[this.seq] = msg;
     return true;
 };
-
-
 
 IMService.Utf8ArrayToStr = function (array) {
     var out, i, len, c;
@@ -339,42 +260,3 @@ IMService.Utf8ArrayToStr = function (array) {
 
     return out;
 };
-
-IMService.StrToUtf8Array = function (str) {
-    var arrayBuffer = new ArrayBuffer(str.length*3);
-    var buf = new Uint8Array(arrayBuffer);
-    var pos = 0;
-
-    for (var i = 0; i < str.length; i++) {
-        var value = str.charCodeAt(i);
-
-        if (value < 0x80) {
-            buf[pos] = value;
-            pos++;
-        } else if (value < 0x0800) {
-            buf[pos] = (value >> 6) | 0xD0;
-            pos++;
-            buf[pos] = (value & 0x3F) | 0x80;
-            pos++;
-        } else if (value <= 0xFFFF) {
-            buf[pos] = (value >> 12) | 0xE0;
-            pos++;
-            buf[pos] = ((value >> 6) & 0x3F) | 0x80;
-            pos++;
-            buf[pos] = (value & 0x3F) | 0x80;
-            pos++;
-        } 
-    }
-    return new Uint8Array(arrayBuffer.slice(0, pos));
-}
-
-
-IMService.guid = function () {
-  function s4() {
-    return Math.floor((1 + Math.random()) * 0x10000)
-      .toString(16)
-      .substring(1);
-  }
-  return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
-    s4() + '-' + s4() + s4() + s4();
-}
