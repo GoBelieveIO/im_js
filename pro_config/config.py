@@ -2,7 +2,7 @@
 
 DEBUG=False
 
-IM_URL = "http://127.0.0.1:23002"
+IM_URL = "http://api.gobelieve.io"
 
 APP_ID = 7
 APP_KEY = "sVDIlIiDUm7tWPYWhi6kfNbrqui3ez44"
