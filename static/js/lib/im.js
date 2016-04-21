@@ -15,6 +15,7 @@ function IMService(observer) {
     this.stopped = true;
     //sending message
     this.messages = {}
+    this.customerMessages = {}
 
     this.device_id = IMService.guid();
 }
@@ -34,6 +35,9 @@ IMService.MSG_ACK = 5;
 IMService.MSG_RST = 6;
 IMService.MSG_PEER_ACK = 9;
 IMService.MSG_AUTH_TOKEN = 15;
+
+IMService.MSG_CUSTOMER = 24
+IMService.MSG_CUSTOMER_SUPPORT = 25
 
 
 IMService.PLATFORM_ID = 3;
@@ -100,8 +104,6 @@ IMService.prototype.connect = function () {
     });
 };
 
-
-
 IMService.prototype.onOpen = function () {
     console.log("socket opened");
     var self = this;
@@ -163,7 +165,63 @@ IMService.prototype.onMessage = function (data) {
         }
 
         this.sendACK(seq);
-    } else if(cmd == IMService.MSG_AUTH_STATUS) {
+    } else if (cmd == IMService.MSG_CUSTOMER) {
+        var msg = {}
+        msg.customerAppID = ntoh64(buf, pos);
+        pos += 8;
+
+        msg.customerID = ntoh64(buf, pos);
+        pos += 8;
+
+        msg.storeID = ntoh64(buf, pos);
+        pos += 8;
+
+        msg.sellerID = ntoh64(buf, pos);
+        pos += 8;
+
+        msg.timestamp = ntohl(buf, pos);
+        pos += 4;
+
+        msg.content = IMService.Utf8ArrayToStr(new Uint8Array(data, IMService.HEADSIZE + 36, len-36));
+
+        console.log("customer message customer appid:" + msg.customerAppID + 
+                    " customer id:" + msg.customerID + " store id:" + msg.storeID + " seller id:" + 
+                    msg.sellerID + "content:" + msg.content);
+
+        if (this.observer != null && "handleCustomerMessage" in this.observer) {
+            this.observer.handleCustomerMessage(msg);
+        }
+
+        this.sendACK(seq);
+    } else if (cmd == IMService.MSG_CUSTOMER_SUPPORT) {
+        var msg = {}
+        msg.customerAppID = ntoh64(buf, pos);
+        pos += 8;
+
+        msg.customerID = ntoh64(buf, pos);
+        pos += 8;
+
+        msg.storeID = ntoh64(buf, pos);
+        pos += 8;
+
+        msg.sellerID = ntoh64(buf, pos);
+        pos += 8;
+
+        msg.timestamp = ntohl(buf, pos);
+        pos += 4;
+
+        msg.content = IMService.Utf8ArrayToStr(new Uint8Array(data, IMService.HEADSIZE + 36, len-36));
+
+        console.log("customer support message customer appid:" + msg.customerAppID + 
+                    " customer id:" + msg.customerID + " store id:" + msg.storeID + 
+                    " seller id:" + msg.sellerID + "content:" + msg.content);
+
+        if (this.observer != null && "handleCustomerSupportMessage" in this.observer) {
+            this.observer.handleCustomerSupportMessage(msg);
+        }
+
+        this.sendACK(seq);
+    } else if (cmd == IMService.MSG_AUTH_STATUS) {
         var status = ntohl(buf, pos);
         console.log("auth status:" + status);
     } else if (cmd == IMService.MSG_ACK) {
@@ -171,9 +229,17 @@ IMService.prototype.onMessage = function (data) {
         if (ack in this.messages) {
             var msg = this.messages[ack];
             if (this.observer != null && "handleMessageACK" in this.observer){
-                this.observer.handleMessageACK(msg.msgLocalID, msg.receiver)
+                this.observer.handleMessageACK(msg.msgLocalID, msg.receiver);
             }
-            delete this.messages[ack]
+            delete this.messages[ack];
+        }
+        if (ack in this.customerMessages) {
+            var msg = this.customerMessages[ack];
+            if (this.observer != null && "handleCustomerMessageACK" in this.observer){
+                this.observer.handleCustomerMessageACK(msg);
+            }
+            delete this.customerMessages[ack];
+
         }
     } else {
         console.log("message command:" + cmd);
@@ -204,10 +270,18 @@ IMService.prototype.onClose = function() {
     for (var seq in this.messages) {
         var msg = this.messages[seq];
         if (this.observer != null && "handleMessageFailure" in this.observer){
-            this.observer.handleMessageFailure(msg.msgLocalID, msg.receiver)
+            this.observer.handleMessageFailure(msg.msgLocalID, msg.receiver);
         }
     }
     this.messages = {};
+
+    for (var seq in this.customerMessages) {
+        var msg = this.customerMessages[seq];
+        if (this.observer != null && "handleCustomerMessageFailure" in this.observer){
+            this.observer.handleCustomerMessageFailure(msg);
+        }
+    }
+    this.customerMessages = {};
 
     var self = this;
     f = function() {
@@ -304,7 +378,55 @@ IMService.prototype.sendPeerMessage = function (msg) {
     return true;
 };
 
+IMService.prototype.writeCustomerMessage = function(msg) {
+    var content = IMService.StrToUtf8Array(msg.content);
+    var arrayBuffer = new ArrayBuffer(36+content.length);
+    var buf = new Uint8Array(arrayBuffer);
+    var pos = 0;
 
+    hton64(buf, pos, msg.customerAppID);
+    pos += 8;
+    hton64(buf, pos, msg.customerID);
+    pos += 8;
+    hton64(buf, pos, msg.storeID);
+    pos += 8;
+    hton64(buf, pos, msg.sellerID);
+    pos += 8;
+    htonl(buf, pos, msg.timestamp)
+    pos += 4;
+    buf.set(content, pos);
+    return buf
+};
+
+IMService.prototype.sendCustomerSupportMessage = function (msg) {
+    if (this.connectState != IMService.STATE_CONNECTED) {
+        return false;
+    }
+
+    var buf = this.writeCustomerMessage(msg);
+    var r = this.send(IMService.MSG_CUSTOMER_SUPPORT, buf);
+    if (!r) {
+        return false;
+    }
+
+    this.customerMessages[this.seq] = msg;
+    return true;
+};
+
+IMService.prototype.sendCustomerMessage = function (msg) {
+    if (this.connectState != IMService.STATE_CONNECTED) {
+        return false;
+    }
+
+    var buf = this.writeCustomerMessage(msg);
+    var r = this.send(IMService.MSG_CUSTOMER, buf);
+    if (!r) {
+        return false;
+    }
+
+    this.customerMessages[this.seq] = msg;
+    return true;
+};
 
 IMService.Utf8ArrayToStr = function (array) {
     var out, i, len, c;
