@@ -6393,7 +6393,7 @@ IMService.prototype.connect = function () {
     if ("WebSocket" in window && false) {
         this.socket = eio({hostname:this.host, port:this.port, transports:["websocket"]});
     } else {
-        this.socket = eio({hostname:this.host, port:this.port, forceBase64:true, transports:["polling"]});
+        this.socket = eio({hostname:this.host, port:this.port, transports:["polling"]});
     }
 
     var self = this;
@@ -6651,7 +6651,9 @@ IMService.prototype.send = function (cmd, body) {
     body.copy(buf, pos);
     pos += body.length;
 
-    this.socket.send(buf);
+    var dataAsBase64String = buf.toString('base64');
+    var data = {base64:true, data:dataAsBase64String}
+    this.socket.send(data);
     return true
 };
 
