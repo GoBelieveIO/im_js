@@ -6391,7 +6391,8 @@ IMService.prototype.connect = function () {
     this.connectState = IMService.STATE_CONNECTING;
     this.callStateObserver();
 
-    if ("WebSocket" in window) {
+    var BrowserWebSocket = global.WebSocket || global.MozWebSocket;
+    if (BrowserWebSocket) {
         this.socket = eio({hostname:this.host, port:this.port, transports:["websocket"]});
     } else {
         this.socket = eio({hostname:this.host, port:this.port, transports:["polling"]});
