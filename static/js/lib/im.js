@@ -6290,6 +6290,7 @@ yeast.decode = decode;
 module.exports = yeast;
 
 },{}],36:[function(require,module,exports){
+(function (global){
 var Buffer = require('buffer/').Buffer;
 var eio = require('engine.io-client');
 var order = require('./byte_order');
@@ -6424,15 +6425,17 @@ IMService.prototype.onOpen = function () {
 };
 
 IMService.prototype.onMessage = function (data) {
+    console.log("message data type:" + typeof data);
+    var buf;
     if (typeof data == "string") {
         console.log("invalid data type:" + typeof data);
         return;
-    } else if (!(data instanceof ArrayBuffer)) {
-        console.log("invalid data type:" + typeof data);
+    } else if (global.ArrayBuffer && data instanceof ArrayBuffer) {
+        buf = new Buffer(data);
         return;
+    } else if (data && data.base64) {
+        buf = new Buffer(data.data, 'base64');
     }
-
-    var buf = new Buffer(data);
 
     var len = ntohl(buf, 0);
     var seq = ntohl(buf, 4);
@@ -6749,6 +6752,7 @@ IMService.guid = function () {
     s4() + '-' + s4() + s4() + s4();
 }
 
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{"./byte_order":1,"buffer/":2,"engine.io-client":6}],37:[function(require,module,exports){
 
 },{}]},{},[36])(36)
