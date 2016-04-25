@@ -167,4 +167,4 @@ def init_logger(logger):
 if __name__ == '__main__':
     log = logging.getLogger('')
     init_logger(log)
-    app.run(host="0.0.0.0", port=8080)
+    app.run(host="0.0.0.0", port=5001)

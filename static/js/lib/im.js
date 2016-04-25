@@ -6425,16 +6425,14 @@ IMService.prototype.onOpen = function () {
 };
 
 IMService.prototype.onMessage = function (data) {
-    console.log("message data type:" + typeof data);
     var buf;
-    if (typeof data == "string") {
-        console.log("invalid data type:" + typeof data);
-        return;
-    } else if (global.ArrayBuffer && data instanceof ArrayBuffer) {
+    if (global.ArrayBuffer && data instanceof ArrayBuffer) {
         buf = new Buffer(data);
-        return;
     } else if (data && data.base64) {
         buf = new Buffer(data.data, 'base64');
+    } else {
+        console.log("invalid data type:" + typeof data);
+        return;
     }
 
     var len = ntohl(buf, 0);
@@ -6654,9 +6652,13 @@ IMService.prototype.send = function (cmd, body) {
     body.copy(buf, pos);
     pos += body.length;
 
-    var dataAsBase64String = buf.toString('base64');
-    var data = {base64:true, data:dataAsBase64String}
-    this.socket.send(data);
+    if (global.ArrayBuffer && buf instanceof ArrayBuffer) {
+        this.socket.send(buf);
+    } else {
+        var dataAsBase64String = buf.toString('base64');
+        var data = {base64:true, data:dataAsBase64String};
+        this.socket.send(data);
+    }
     return true
 };
 

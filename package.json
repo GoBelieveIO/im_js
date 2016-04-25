@@ -1,0 +1,10 @@
+{
+  "name": "gobelieve",
+  "version": "1.0.0",
+  "description": "gobelieve sdk",
+  "main": "lib/im.js",
+  "dependencies": {
+    "buffer": "^4.6.0",
+    "engine.io-client": "^1.6.8"
+  }
+}

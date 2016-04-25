@@ -1,5 +1,5 @@
 #IM JS SDK
-
+browserify -s IMService  . > static/js/lib/im.js
 
 ## IMService Methods
 
