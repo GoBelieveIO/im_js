@@ -6696,7 +6696,7 @@ IMService.prototype.sendPeerMessage = function (msg) {
 
 IMService.prototype.writeCustomerMessage = function(msg) {
     var len = Buffer.byteLength(msg.content);
-    var buf = new Buffer(26+len);
+    var buf = new Buffer(36+len);
     var pos = 0;
 
     hton64(buf, pos, msg.customerAppID);
