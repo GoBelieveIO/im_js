@@ -6515,7 +6515,7 @@ IMService.prototype.onMessage = function (data) {
         msg.timestamp = ntohl(buf, pos);
         pos += 4;
 
-        msg.content = buf.toString(IMService.HEADSIZE + 36, IMService.HEADSIZE + len);
+        msg.content = buf.toString('utf8', IMService.HEADSIZE + 36, IMService.HEADSIZE + len);
 
         console.log("customer support message customer appid:" + msg.customerAppID + 
                     " customer id:" + msg.customerID + " store id:" + msg.storeID + 
