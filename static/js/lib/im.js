@@ -6395,7 +6395,7 @@ IMService.prototype.connect = function () {
     if (BrowserWebSocket) {
         this.socket = eio({hostname:this.host, port:this.port, transports:["websocket"]});
     } else {
-        this.socket = eio({hostname:this.host, port:this.port, transports:["polling"]});
+        this.socket = eio({hostname:this.host, port:this.port, enablesXDR:true, transports:["polling"]});
     }
 
     var self = this;
