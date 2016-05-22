@@ -59,10 +59,15 @@ error_html = """<!DOCTYPE html>
 </body>
 </html>"""
 
-def login(uid, uname):
+def login(uid, uname, platform_id, device_id):
     url = config.IM_URL + "/auth/grant"
     obj = {"uid":uid, "user_name":uname}
     
+    logging.debug("platform:%s device:%s", platform_id, device_id)
+    if platform_id and device_id:
+        obj['platform_id'] = platform_id
+        obj['device_id'] = device_id
+
     m = md5.new(config.APP_SECRET)
     secret = m.hexdigest()
 
@@ -86,7 +91,7 @@ def login_session():
     if sender == 0 or receiver == 0:
         return error_html
 
-    token = login(sender, '')
+    token = login(sender, '', None, None)
     if not token:
         return error_html
 
@@ -116,7 +121,7 @@ def customer_login():
     if sender == 0 or receiver == 0:
         return error_html
 
-    token = login(sender, '')
+    token = login(sender, '', None, None)
     if not token:
         return error_html
 
@@ -146,7 +151,8 @@ def access_token():
     if not uid:
         return INVALID_PARAM()
 
-    token = login(uid, user_name)
+    logging.debug("obj:%s", obj)
+    token = login(uid, user_name, obj.get('platform_id'), obj.get('device_id'))
     if not token:
         return LOGIN_FAIL()
 
@@ -164,7 +170,7 @@ def init_logger(logger):
     ch.setFormatter(formatter)
     root.addHandler(ch)    
 
+log = logging.getLogger('')
+init_logger(log)
 if __name__ == '__main__':
-    log = logging.getLogger('')
-    init_logger(log)
     app.run(host="0.0.0.0", port=5001)
