@@ -164,6 +164,11 @@ $(document).ready(function () {
         handleMessageFailure: function(msgLocalID, receiver) {
             //console.log("message fail local id:", msgLocalID, " receiver:", receiver)
         },
+
+        handleRTMessage: function(msg) {
+            console.log("rt message sender:", msg.sender, " receiver", msg.receiver, " content:", msg.content);
+        },
+
         onConnectState: function(state) {
             if (state == IMService.STATE_CONNECTED) {
                 //console.log("im connected");

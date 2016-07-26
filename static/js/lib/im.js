@@ -6338,6 +6338,7 @@ IMService.MSG_ACK = 5;
 IMService.MSG_RST = 6;
 IMService.MSG_PEER_ACK = 9;
 IMService.MSG_AUTH_TOKEN = 15;
+IMService.MSG_RT = 17;
 
 IMService.MSG_CUSTOMER = 24
 IMService.MSG_CUSTOMER_SUPPORT = 25
@@ -6498,6 +6499,21 @@ IMService.prototype.onMessage = function (data) {
         }
 
         this.sendACK(seq);
+    } else if (cmd == IMService.MSG_RT) {
+        var msg = {}
+        msg.sender = ntoh64(buf, pos);
+        pos += 8;
+
+        msg.receiver = ntoh64(buf, pos);
+        pos += 8;
+
+        msg.content = buf.toString("utf8", IMService.HEADSIZE + 16, IMService.HEADSIZE + len);
+
+        console.log("rt message sender:" + msg.sender +" receiver:" + msg.receiver + "content:" + msg.content);
+
+        if (this.observer != null && "handleRTMessage" in this.observer) {
+            this.observer.handleRTMessage(msg);
+        }
     } else if (cmd == IMService.MSG_CUSTOMER_SUPPORT) {
         var msg = {}
         msg.customerAppID = ntoh64(buf, pos);
@@ -6693,6 +6709,33 @@ IMService.prototype.sendPeerMessage = function (msg) {
     this.messages[this.seq] = msg;
     return true;
 };
+
+
+IMService.prototype.sendRTMessage = function (msg) {
+    if (this.connectState != IMService.STATE_CONNECTED) {
+        return false;
+    }
+
+    var len = Buffer.byteLength(msg.content);
+    var buf = new Buffer(16+len);
+    var pos = 0;
+
+    hton64(buf, pos, msg.sender);
+    pos += 8;
+    hton64(buf, pos, msg.receiver);
+    pos += 8;
+
+    len = buf.write(msg.content, pos);
+    pos += len;
+
+
+    var r = this.send(IMService.MSG_RT, buf);
+    if (!r) {
+        return false;
+    }
+    return true;
+};
+
 
 IMService.prototype.writeCustomerMessage = function(msg) {
     var len = Buffer.byteLength(msg.content);
