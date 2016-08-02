@@ -134,6 +134,32 @@ def customer():
     return render_template('customer.html')
 
 
+@app.route('/room/chat')
+def room_chat():
+    return render_template('room_chat.html', host=config.HOST)
+
+
+@app.route('/room/login', methods=["POST"])
+def room_login():
+    sender = int(request.form['sender']) if request.form.has_key('sender') else 0
+    receiver = int(request.form['receiver']) if request.form.has_key('receiver') else 0
+
+    if sender == 0 or receiver == 0:
+        return error_html
+
+    token = login(sender, '', None, None)
+    if not token:
+        return error_html
+
+    response = flask.make_response(redirect(url_for('.room_chat', sender=sender, receiver=receiver)))
+    response.set_cookie('token', token)
+    return response
+
+@app.route('/room')
+def room_index():
+    return render_template('room_index.html')
+
+
 @app.route('/favicon.ico')
 def favicon():
     return send_from_directory(app.root_path,
