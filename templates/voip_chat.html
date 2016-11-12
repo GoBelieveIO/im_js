@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <title>
+            example
+        </title>
+        <link rel="stylesheet" href="/static/css/style.css" type="text/css" />
+        <script src="/static/js/lib/jquery-1.11.1.js" type="text/javascript"></script>
+        <script src="/static/js/lib/console.js" type="text/javascript"></script>
+        <script src="/static/js/lib/json2.js"></script>
+        <script src="/static/js/lib/im.js"></script>
+        <script src="/static/js/rtc_adapter.js"></script>
+        <script src="/static/js/voip_chat.js"></script>
+        <script type="text/javascript">
+         var host = "{{host}}";
+        </script>
+    </head>
+
+    <body>
+        <video id="camera" autoplay></video>
+        <video id="remote" autoplay></video>
+
+        <button onclick="onDialClick()">呼叫</button>
+
+    </body>
+
+</html>

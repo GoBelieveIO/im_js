@@ -160,6 +160,21 @@ def room_index():
     return render_template('room_index.html')
 
 
+@app.route('/voip')
+def voip_chat():
+    sender = int(request.args.get('sender')) if request.args.get('sender') else 0
+    if not sender:
+        return error_html
+
+    token = login(sender, '', None, None)
+    if not token:
+        print "errrrrr"
+        return error_html
+
+    response = flask.make_response(render_template('voip_chat.html', host=config.HOST))
+    response.set_cookie('token', token)
+    return response
+
 @app.route('/favicon.ico')
 def favicon():
     return send_from_directory(app.root_path,

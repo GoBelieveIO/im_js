@@ -1,5 +1,7 @@
 #IM JS SDK
-browserify -s IMService  . > static/js/lib/im.js
+browserify -s gobelieve  . > static/js/lib/im.js
+
+watchify --debug -s gobelieve  . -o static/js/lib/im.js
 
 ## IMService Methods
 
