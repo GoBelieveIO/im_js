@@ -7,6 +7,8 @@ var storeID = 0;
 var appID = 7;
 var uid = 0;
 
+var IMService = gobelieve.IMService;
+
 String.format = function() {
     if( arguments.length == 0 )
         return null;
@@ -278,7 +280,8 @@ observer = {
     }
 };
 
-var im = new IMService(observer);
+var im = new IMService();
+im.observer = observer;
 
 
 $(document).ready(function () {

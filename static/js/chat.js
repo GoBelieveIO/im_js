@@ -4,6 +4,7 @@ var users;
 var base = 1000;
 var msgLocalID=0;
 var increase = 25;
+var IMService = gobelieve.IMService;
 
 util = {
     urlRE: /https?:\/\/([-\w\.]+)+(:\d+)?(\/([^\s]*(\?\S+)?)?)?/g,
@@ -190,8 +191,9 @@ $(document).ready(function () {
         }
     };
 
-    var im = new IMService(observer);
-    im.host = host
+    var im = new IMService();
+    im.host = host;
+    im.observer = observer;
 
     var r = util.getURLParameter('receiver', location.search);
     if (r) {
