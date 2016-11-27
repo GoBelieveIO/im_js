@@ -5,8 +5,10 @@ var VOIPSession = gobelieve.VOIPSession;
 var configuration = {
     'iceServers': [{
         'url': 'stun:stun.counterpath.net:3478'
-    }]
+    }, {"url":"turn:turn.gobelieve.io:3478?transport=udp"}]
 };
+
+
 var pc;
 var mediaStream;
 
@@ -127,6 +129,10 @@ function startStream() {
     var kRTCICECandidateMLineIndexKey = "label";
     var kRTCICECandidateSdpKey = "candidate";
     var kRTCICECandidatesTypeKey = "candidates";
+
+    var turnServer = configuration.iceServers[1];
+    turnServer.username = "7_" + uid;
+    turnServer.credential = token;
 
     pc = new RTCPeerConnection(configuration);
 
