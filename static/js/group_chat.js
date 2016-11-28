@@ -174,6 +174,12 @@ $(document).ready(function () {
         handleGroupMessageFailure: function(msgLocalID, receiver) {
             console.log("message fail local id:", msg.msgLocalID, " receiver:", msg.receiver)
         },
+
+        //创建群,加入群,离开群的通知消息
+        handleGroupNotification: function(groupNotification) {
+            console.log("group notification:", groupNotification);
+        },
+
         onConnectState: function(state) {
             if (state == IMService.STATE_CONNECTED) {
                 console.log("im connected");        
