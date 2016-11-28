@@ -1,4 +1,5 @@
 var username;
+var uid;
 var receiver;
 var users;
 var base = 1000;
@@ -44,7 +45,7 @@ util = {
             RegExp(name + '=' + '(.+?)(&|$)'))
         return param ? decodeURIComponent(param[1]) : null
     },
-     
+    
     getCookie: function(c_name) {
         if (document.cookie.length>0) {
             c_start=document.cookie.indexOf(c_name + "=")
@@ -162,22 +163,20 @@ function showChat() {
 
 $(document).ready(function () {
     observer = {
-        handlePeerMessage: function (msg) {
-            //console.log("msg sender:", msg.sender, " receiver:", msg.receiver, " content:", msg.content, " timestamp:", msg.timestamp);
+        handleGroupMessage: function (msg) {
+            console.log("msg sender:", msg.sender, " receiver:", msg.receiver, " content:", msg.content, " timestamp:", msg.timestamp);
             addMessage(msg.sender, msg.receiver, msg.content);
             $("#chatHistory").show();
-            //if (msg.sender !== username)
-            //    tip('message', msg.sender);
         },
-        handleMessageACK: function(msg) {
-            //console.log("message ack local id:", msgLocalID, " receiver:", receiver)
+        handleGroupMessageACK: function(msg) {
+            console.log("message ack local id:", msg.msgLocalID, " receiver:", msg.receiver)
         },
-        handleMessageFailure: function(msg) {
-            //console.log("message fail local id:", msgLocalID, " receiver:", receiver)
+        handleGroupMessageFailure: function(msgLocalID, receiver) {
+            console.log("message fail local id:", msg.msgLocalID, " receiver:", msg.receiver)
         },
         onConnectState: function(state) {
             if (state == IMService.STATE_CONNECTED) {
-                console.log("im connected");
+                console.log("im connected");        
             } else if (state == IMService.STATE_CONNECTING) {
                 console.log("im connecting");
             } else if (state == IMService.STATE_CONNECTFAIL) {
@@ -207,6 +206,7 @@ $(document).ready(function () {
         sender = 0;
     }
     username = sender;
+    uid = sender;
     console.log("sender:" + sender)
     
 
@@ -216,25 +216,21 @@ $(document).ready(function () {
     im.accessToken = token
     im.start();
 
-
     setName();
     showChat();
     //deal with chat mode.
     $("#entry").keypress(function (e) {
-        var target = parseInt($("#usersList").val());
         if (e.keyCode != 13 /* Return */) return;
         var msg = $("#entry").val().replace("\n", "");
         if (!util.isBlank(msg)) {
             var obj = {"text": msg};
             var textMsg = JSON.stringify(obj);
-            var message = {sender:username, receiver: target, content: textMsg, msgLocalID:msgLocalID++};
+            var message = {sender:uid, receiver: receiver, content: textMsg, msgLocalID:msgLocalID++};
             if (im.connectState == IMService.STATE_CONNECTED) {
-                im.sendPeerMessage(message);
+                im.sendGroupMessage(message);
                 $("#entry").val(""); // clear the entry field.
-                if (target != '*' && target != username) {
-                    addMessage(username, target, msg);
-                    $("#chatHistory").show();
-                }
+                addMessage(username, receiver, msg);
+                $("#chatHistory").show();
             }
         }
     });

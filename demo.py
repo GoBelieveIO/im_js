@@ -160,6 +160,33 @@ def room_index():
     return render_template('room_index.html')
 
 
+
+@app.route('/group/chat')
+def group_chat():
+    return render_template('group_chat.html', host=config.HOST)
+
+
+@app.route('/group/login', methods=["POST"])
+def group_login():
+    sender = int(request.form['sender']) if request.form.has_key('sender') else 0
+    receiver = int(request.form['receiver']) if request.form.has_key('receiver') else 0
+
+    if sender == 0 or receiver == 0:
+        return error_html
+
+    token = login(sender, '', None, None)
+    if not token:
+        return error_html
+
+    response = flask.make_response(redirect(url_for('.group_chat', sender=sender, receiver=receiver)))
+    response.set_cookie('token', token)
+    return response
+
+@app.route('/group')
+def group_index():
+    return render_template('group_index.html')
+
+
 @app.route('/voip')
 def voip_chat():
     sender = int(request.args.get('sender')) if request.args.get('sender') else 0
@@ -168,7 +195,6 @@ def voip_chat():
 
     token = login(sender, '', None, None)
     if not token:
-        print "errrrrr"
         return error_html
 
     response = flask.make_response(render_template('voip_chat.html', host=config.HOST))

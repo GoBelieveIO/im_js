@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <title>
+            Group Demo
+        </title>
+        <link rel="stylesheet" href="/static/css/style.css" type="text/css" />
+        <script src="/static/js/lib/jquery-1.11.1.js" type="text/javascript"></script>
+        <script>
+
+          function validateForm() {
+              var x = document.forms["myForm"]["sender"].value;
+              if (x == null || x == "") {
+                  alert("sender must be filled out");
+                  return false;
+              }
+              var receiver = document.forms["myForm"]["receiver"].value;
+              if (receiver == null || receiver == "") {
+                  alert("receiver must be filled out");
+                  return false;
+              }
+              return true;
+           }
+
+        </script>
+
+    </head>
+
+    <body>
+        <form name="myForm" action="group/login" method="post" onsubmit="return validateForm()">
+          <tr>
+              <td>
+                  <input name="sender" type="text" placeholder="enter your id(1-10)" />
+              </td>
+          </tr>
+          <tr>
+              <td>
+                  <input name="receiver" type="text" placeholder="enter group id(15)" />
+              </td>
+          </tr>
+          <tr>
+              <td>
+                  <input id="login" type='submit' value="join" />
+              </td>
+          </tr>
+        </form>
+    </body>
+</html>
