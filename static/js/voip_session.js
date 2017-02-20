@@ -1,27 +1,11 @@
-//session state changed callback
-//-(void)onRefuse;
-//-(void)onHangUp;
-//-(void)onTalking;
-// 
-//-(void)onDialTimeout;
-//-(void)onAcceptTimeout;
-//-(void)onConnected;
-//-(void)onRefuseFinished;
-
-var VOIPCommand = require('./voip_command');
-
-
-
-function VOIPSession(im, handler) {
-    this.sessionChangedHandler = handler;
+function VOIPSession(im) {
+    VOIPStream.call(this);
     this.im = im;
-
     this.state = VOIPSession.VOIP_ACCEPTING;
 
-    this.dialCount = 0;
     this.dialTimer = 0;
-    this.uid = 0;
-    this.peer = 0;
+    this.pingTimer = 0;
+    this.transferTimer = 0;
 }
 
 VOIPSession.VOIP_LISTENING = 1;
@@ -40,10 +24,19 @@ function getNow() {
     return d.getTime()/1000;
 }
 
+//ECMAScript 5 Object.create(o)
+function object(o) {
+    var F = function () {};
+    F.prototype = o;
+    return new F();
+}
+
+VOIPSession.prototype = object(VOIPStream.prototype);
+VOIPSession.prototype.constructor = VOIPSession;
+
 VOIPSession.prototype.dial = function() {
     this.state = VOIPSession.VOIP_DIALING;
 
-    this.dialCount = 0;
     this.dialBeginTimestamp = getNow();
     this.sendDial();
 
@@ -52,7 +45,7 @@ VOIPSession.prototype.dial = function() {
         self.sendDial();
         var now = getNow();
         if (now - self.dialBeginTimestamp >= 60) {
-            self.sessionChangedHandler.onDialTimeout();
+            self.onDialTimeout();
             self.clearDialTimer();
         }
     }, 1000);  
@@ -65,14 +58,25 @@ VOIPSession.prototype.sendDial = function() {
     console.log("send dial...");
     var command = new VOIPCommand();
     command.cmd = VOIPCommand.VOIP_COMMAND_DIAL_VIDEO;
-    command.dialCount = this.dialCount + 1;
+    command.channelID = this.channelID;
 
-    var r = this.sendCommand(command);
-    if (r) {
-        this.dialCount = this.dialCount + 1;
-    }
+    this.sendCommand(command);
 };
 
+VOIPSession.prototype.ping = function() {
+    var self = this;
+    this.pingTimer = setInterval(function() {
+        self.sendPing();
+    }, 1000);
+    this.sendPing();
+}
+
+VOIPSession.prototype.sendPing = function() {
+    var command = new VOIPCommand();
+    command.cmd = VOIPCommand.VOIP_COMMAND_PING;
+    command.channelID = this.channelID;
+    this.sendCommand(command);
+};
 
 VOIPSession.prototype.accept = function() {
     this.state = VOIPSession.VOIP_ACCEPTED;
@@ -81,10 +85,22 @@ VOIPSession.prototype.accept = function() {
 
 
 VOIPSession.prototype.refuse = function() {
-    this.state = VOIPSession.VOIP_REFUSING;
+    this.state = VOIPSession.VOIP_REFUSED;
     this.sendDialRefuse();
 };
 
+
+//清空所有的定时器
+VOIPSession.prototype.close = function() {
+    if (this.pingTimer) {
+        clearInterval(this.pingTimer);
+        this.pingTimer = 0;
+    }
+    if (this.dialTimer) {
+        clearInterval(this.dialTimer);
+        this.dialTimer = 0;
+    }
+}
 
 VOIPSession.prototype.hangUp = function() {
     if (this.state == VOIPSession.VOIP_DIALING) {
@@ -94,6 +110,13 @@ VOIPSession.prototype.hangUp = function() {
     } else if (this.state == VOIPSession.VOIP_CONNECTED) {
         this.sendHangUp();
         this.state = VOIPSession.VOIP_HANG_UP;
+
+        this.stopStream(function() {
+            console.log("on stream closed");
+        });
+
+        this.close();
+
     } else {
         console.log("invalid voip state:" + this.state);
     }
@@ -103,55 +126,62 @@ VOIPSession.prototype.sendCommand = function(command) {
     var msg = {};
     msg.sender = this.uid;
     msg.receiver = this.peer;
-    msg.content = command.toData();
-    var r = this.im.sendVOIPControl(msg);
+    msg.content = JSON.stringify({voip:command.toData()});
+    var r = this.im.sendRTMessage(msg);
     return r;
 };
 
-VOIPSession.prototype.sendTalking = function(recveiver) {
+VOIPSession.prototype.sendTalking = function(receiver) {
     var command = new VOIPCommand();
     command.cmd = VOIPCommand.VOIP_COMMAND_TALKING;
-
+    command.channelID = this.channelID;
     var msg = {};
     msg.sender = this.uid;
     msg.receiver = receiver;
-    msg.content = command.toData();
-    this.im.sendVOIPControl(msg);
+    msg.content = JSON.stringify({voip:command.toData()});
+    this.im.sendRTMessage(msg);
 };
 
 
 VOIPSession.prototype.sendDialAccept = function(recveiver) {
     var command = new VOIPCommand();
     command.cmd = VOIPCommand.VOIP_COMMAND_ACCEPT;
-
+    command.channelID = this.channelID;
     this.sendCommand(command);
 };
 
 
-VOIPSession.prototype.sendDialRefuse = function(recveiver) {
+VOIPSession.prototype.sendDialRefuse = function(receiver) {
     var command = new VOIPCommand();
     command.cmd = VOIPCommand.VOIP_COMMAND_REFUSE;
-
+    command.channelID = this.channelID;
     this.sendCommand(command);
 };
 
 
-VOIPSession.prototype.sendConnected = function(recveiver) {
+VOIPSession.prototype.sendConnected = function(receiver) {
     var command = new VOIPCommand();
     command.cmd = VOIPCommand.VOIP_COMMAND_CONNECTED;
-
+    command.channelID = this.channelID;
     this.sendCommand(command);
 };
 
-VOIPSession.prototype.sendRefused = function(recveiver) {
+VOIPSession.prototype.sendRefused = function(receiver) {
     var command = new VOIPCommand();
     command.cmd = VOIPCommand.VOIP_COMMAND_REFUSED;
+    command.channelID = this.channelID;
+    this.sendCommand(command);
+};
 
+VOIPSession.prototype.sendHangUp = function() {
+    var command = new VOIPCommand();
+    command.cmd = VOIPCommand.VOIP_COMMAND_HANG_UP;
+    command.channelID = this.channelID;
     this.sendCommand(command);
 };
 
 VOIPSession.prototype.clearDialTimer = function() {
-    console.log("clear dial timer11....:", this.dialTimer);
+    console.log("clear dial timer....:", this.dialTimer);
     if (this.dialTimer > 0) {
         console.log("clear dial timer");
         clearInterval(this.dialTimer);
@@ -159,62 +189,81 @@ VOIPSession.prototype.clearDialTimer = function() {
     }    
 };
 
-VOIPSession.prototype.handleVOIPControl = function(msg) {
-    if (msg.sender != this.peer) {
-        this.sendTalking(msg.sender);
+VOIPSession.prototype.handleVOIPMessage = function(obj, sender) {
+
+    console.log("handle voip message...");
+    if (sender != this.peer) {
+        this.sendTalking(sender);
         return;
     }
 
     var command = new VOIPCommand();
-    command.fromData(msg.content);
+    command.fromData(obj);
     if (this.state == VOIPSession.VOIP_DIALING) {
         if (command.cmd == VOIPCommand.VOIP_COMMAND_ACCEPT) {
             this.sendConnected();
-            this.state = VOIPSession.VOIP_CONNECTED;
             this.clearDialTimer();
-
-            this.sessionChangedHandler.onConnected();
+            this.onConnected();
+            this.state = VOIPSession.VOIP_CONNECTED;
         } else if (command.cmd == VOIPCommand.VOIP_COMMAND_REFUSE) {
-            this.state = VOIPSession.VOIP_REFUSED;
             this.sendRefused();
             this.clearDialTimer();
-            
-            this.sessionChangedHandler.onRefuse();
+            this.onRemoteRefuse();
+            this.state = VOIPSession.VOIP_REFUSED;
         } else if (command.cmd == VOIPCommand.VOIP_COMMAND_TALKING) {
-            this.state = VOIPSession.VOIP_SHUTDOWN;
             this.clearDialTimer();
-
-            this.sessionChangedHandler.onTalking();
+            this.onTalking();
+            this.state = VOIPSession.VOIP_SHUTDOWN;
         }
     } else if (this.state == VOIPSession.VOIP_ACCEPTING) {
         if (command.cmd == VOIPCommand.VOIP_COMMAND_HANG_UP) {
+            this.onRemoteHangUp();
             this.state = VOIPSession.VOIP_HANGED_UP;
-
-            this.sessionChangedHandler.onHangUp();
         }
     } else if (this.state == VOIPSession.VOIP_ACCEPTED) {
         if (command.cmd == VOIPCommand.VOIP_COMMAND_CONNECTED) {
+            this.onConnected();
             this.state = VOIPSession.VOIP_CONNECTED;
-            this.sessionChangedHandler.onConnected();
         } else if (command.cmd == VOIPCommand.VOIP_COMMAND_DIAL||
                    command.cmd == VOIPCommand.VOIP_COMMAND_DIAL_VIDEO) {
             this.sendDialAccept();
         }
     } else if (this.state == VOIPSession.VOIP_CONNECTED) {
         if (command.cmd == VOIPCommand.VOIP_COMMAND_HANG_UP) {
+            this.onRemoteHangUp();
             this.state = VOIPSession.VOIP_HANGED_UP;
-            this.sessionChangedHandler.onHangUp();
-        }
-    } else if (this.state == VOIPSession.VOIP_REFUSING) {
-        if (command.cmd == VOIPCommand.VOIP_COMMAND_REFUSED) {
-            this.state = VOIPSession.VOIP_REFUSED;
-            this.sessionChangedHandler.onRefuseFinished();
-        } else if (command.cmd == VOIPCommand.VOIP_COMMAND_DIAL||
-                   command.cmd == VOIPCommand.VOIP_COMMAND_DIAL_VIDEO) {
-            this.sendDialRefuse();
         }
     }
 };
 
 
-module.exports = VOIPSession;
+VOIPSession.prototype.onRemoteRefuse = function() {
+    console.log("on refuse");
+};
+
+VOIPSession.prototype.onRemoteHangUp = function() {
+    console.log("on remote hangup");
+    if (this.state == VOIPSession.VOIP_CONNECTED) {
+        this.stopStream(function() {
+            console.log("on stream closed");
+        });
+    }
+
+    this.close();
+};
+
+VOIPSession.prototype.onTalking = function() {
+    console.log("on talking");
+};
+
+VOIPSession.prototype.onDialTimeout = function() {
+    console.log("dial timeout");
+};
+
+VOIPSession.prototype.onConnected = function() {
+    console.log("on connected");
+    this.startStream();
+    this.ping();
+};
+
+

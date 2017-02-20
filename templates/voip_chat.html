@@ -12,6 +12,11 @@
         <script src="/static/js/lib/json2.js"></script>
         <script src="/static/js/lib/im.js"></script>
         <script src="/static/js/rtc_adapter.js"></script>
+        <script src="/static/js/recorder.js"></script>
+
+        <script src="/static/js/voip_command.js"></script>
+        <script src="/static/js/voip_stream.js"></script>
+        <script src="/static/js/voip_session.js"></script>
         <script src="/static/js/voip_chat.js"></script>
         <script type="text/javascript">
          var host = "{{host}}";
@@ -22,7 +27,11 @@
         <video id="camera" autoplay></video>
         <video id="remote" autoplay></video>
 
-        <button onclick="onDialClick()">呼叫</button>
+
+        <button id="accept" style="display: none" onclick="onAccept()">接听</button>
+        <button id="refuse" style="display: none" onclick="onRefuse()">拒绝</button>
+        <button id="hangup" style="display: none" onclick="onHangUp()">挂断</button>
+        <button id="dial" onclick="onDialClick()">呼叫</button>
 
     </body>
 

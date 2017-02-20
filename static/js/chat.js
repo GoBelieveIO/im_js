@@ -4,7 +4,6 @@ var users;
 var base = 1000;
 var msgLocalID=0;
 var increase = 25;
-var IMService = gobelieve.IMService;
 
 util = {
     urlRE: /https?:\/\/([-\w\.]+)+(:\d+)?(\/([^\s]*(\?\S+)?)?)?/g,

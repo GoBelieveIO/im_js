@@ -1,105 +1,63 @@
 
-var IMService = gobelieve.IMService;
-var VOIPSession = gobelieve.VOIPSession;
-
-var configuration = {
-    'iceServers': [{
-        'url': 'stun:stun.counterpath.net:3478'
-    }, {"url":"turn:turn.gobelieve.io:3478?transport=udp"}]
-};
-
-
-var pc;
-var mediaStream;
-
 var peer;//对方id
 var uid;//当前用户id
-
 
 var cameraView;
 var remoteView;
 
-
 var im;
-
-var isCaller = true;
-
-
-var sessionHandler = {
-    onRefuse:function() {
-        console.log("on refuse");
-    },
-
-    onHangUp:function() {
-        console.log("on hangup");
-        stopStream();
-    },
-
-    onTalking:function() {
-        console.log("on talking");
-    },
-
-    onDialTimeout:function() {
-        console.log("dial timeout");
-    },
-
-    onConnected:function() {
-        console.log("on connected");
-        startStream();
-    },
-
-    onRefuseFinished:function() {
-        console.log("on refuse finished");
-    },
-}
+var voipSession = null;
 
 
 var observer = {
-    handleVOIPControl: function(msg) {    
-        if (msg.sender != peer) {
-            return;
-        }
-
-        isCaller = false;
-        var voipSession = new VOIPSession(im, sessionHandler);
-        voipSession.uid = sender;
-        voipSession.peer = peer;
-
-        im.voipObserver = voipSession;
-
-        //todo 询问用户是否接听
-        setTimeout(function() {
-            voipSession.accept();
-        }, 1000);
-    },
 
     handleRTMessage:function(msg) {
         console.log("rt message...:", msg.content);
-        var obj = JSON.parse(msg.content);
-        if (obj.type == "candidate") {
-            var m = {"sdpMid":obj.id, "sdpMLineIndex":obj.label, "candidate":obj.candidate}
-            pc.addIceCandidate(new RTCIceCandidate(m));
-        } else if (obj.type == "remove-candidates") {
-            
-        } else if (obj.type == "offer") {
-            var sd = new RTCSessionDescription(obj);
-            console.log("set remote offer description")
-            pc.setRemoteDescription(sd, function() {
-                pc.createAnswer(localDescCreated, logError);
-            });
-        } else if (obj.type == "answer") {
-            var sd = new RTCSessionDescription(obj);
-            console.log("set remote answer description");
-            pc.setRemoteDescription(sd, function() {
-          
-            });
+
+        if (msg.receiver != uid) {
+            return;
+        }
+        
+        var rtObj = JSON.parse(msg.content);
+        if (rtObj.p2p) {
+            if (voipSession) {
+                voipSession.handleP2PMessage(rtObj.p2p);
+            }
+        } else if (rtObj.voip) {
+            var obj = rtObj.voip;
+
+            var cmd = new VOIPCommand(obj);
+            cmd.fromData(obj);
+            if (cmd.cmd == VOIPCommand.VOIP_COMMAND_DIAL ||
+                cmd.cmd == VOIPCommand.VOIP_COMMAND_DIAL_VIDEO) {
+                if (!voipSession) {
+                    voipSession = new VOIPSession(im);
+
+                    voipSession.onConnected = onConnected;
+                    voipSession.onRemoteHangUp = onRemoteHangUp;
+                    
+                    voipSession.uid = uid;
+                    voipSession.peer = msg.sender;
+                    voipSession.isCaller = false;
+                    voipSession.token = token;
+                    voipSession.channelID = cmd.channelID;
+                    voipSession.cameraView = cameraView;
+                    voipSession.remoteView = remoteView;
+                    
+                    document.getElementById('accept').style.display = 'inline';
+                    document.getElementById('refuse').style.display = 'inline';
+                    document.getElementById('dial').style.display = 'none';
+                }
+            }
+            if (voipSession) {
+                voipSession.handleVOIPMessage(obj, msg.sender);
+            }
         }
     },
+    
     onConnectState: function(state) {
         if (state == IMService.STATE_CONNECTED) {
-            //console.log("im connected");
-            // 连接成功
-            //showChat();
+            console.log("im connected");
         } else if (state == IMService.STATE_CONNECTING) {
             console.log("im connecting");
         } else if (state == IMService.STATE_CONNECTFAIL) {
@@ -110,101 +68,6 @@ var observer = {
     }
 };
 
-function stopStream() {
-    if (mediaStream) {
-        mediaStream.getAudioTracks()[0].stop();
-        mediaStream.getVideoTracks()[0].stop();
-    }
-    if (pc) {
-        pc.close();
-        pc = null;
-    }
-}
-
-function startStream() {
-
-    var kRTCICECandidateTypeKey = "type";
-    var kRTCICECandidateTypeValue = "candidate";
-    var kRTCICECandidateMidKey = "id";
-    var kRTCICECandidateMLineIndexKey = "label";
-    var kRTCICECandidateSdpKey = "candidate";
-    var kRTCICECandidatesTypeKey = "candidates";
-
-    var turnServer = configuration.iceServers[1];
-    turnServer.username = "7_" + uid;
-    turnServer.credential = token;
-
-    pc = new RTCPeerConnection(configuration);
-
-    // send any ice candidates to the other peer
-    pc.onicecandidate = function (evt) {
-        if (evt.candidate) {
-            var candidate = {};
-            console.log("origin candidate:" + JSON.stringify(evt.candidate));
-            candidate[kRTCICECandidateTypeKey] = kRTCICECandidateTypeValue;
-
-            candidate[kRTCICECandidateMLineIndexKey] = evt.candidate.sdpMLineIndex;
-            candidate[kRTCICECandidateMidKey] = evt.candidate.sdpMid;
-            candidate[kRTCICECandidateSdpKey] = evt.candidate.candidate;
-            var content = JSON.stringify(candidate);
-            console.log("candidate:" + content);
-
-            msg = {sender:uid, receiver:peer, content:content};
-            im.sendRTMessage(msg);
-        }
-    };
-
-    // let the 'negotiationneeded' event trigger offer generation
-    pc.onnegotiationneeded = function () {
-   
-    }
-
-    // once remote stream arrives, show it in the remote video element
-    pc.onaddstream = function (evt) {
-        remoteView.src = URL.createObjectURL(evt.stream);
-    };
-
-    // get a local stream, show it in a self-view and add it to be sent
-    navigator.getUserMedia({
-        'audio': true,
-        'video': true
-    }, function (stream) {
-        console.log("got media stream:" + stream);
-        mediaStream = stream;
-        cameraView.src = URL.createObjectURL(stream);
-        pc.addStream(stream);
-
-        if (isCaller) {
-            console.log("create offer...");
-            pc.createOffer(localDescCreated, logError);
-        }
-    }, logError);
-
-  
-}
-
-function localDescCreated(desc) {
-    console.log("set local description");
-    pc.setLocalDescription(desc, function () {
-        var obj = {};
-        obj.sdp = pc.localDescription.sdp;
-        obj.type = pc.localDescription.type;
-        console.log("local desc:" + pc.localDescription)
-        console.log("local desc:" + JSON.stringify(obj));
-
-        var msg = {};
-        msg.sender = uid;
-        msg.receiver = peer;
-        msg.content = JSON.stringify(obj);
-        var r = im.sendRTMessage(msg);
-        console.log("send rt message:" + r);
-
-    }, logError);
-}
-
-function logError(error) {
-    console.log(error.name + ': ' + error.message);
-}
 
 util = {
     urlRE: /https?:\/\/([-\w\.]+)+(:\d+)?(\/([^\s]*(\?\S+)?)?)?/g,
@@ -296,15 +159,66 @@ $(document).ready(function () {
     cameraView.muted = true;
 });
 
+function onConnected() {
+    console.log("on connected");
+    VOIPSession.prototype.onConnected.call(this);
+
+    document.getElementById('accept').style.display = 'none';
+    document.getElementById('refuse').style.display = 'none';
+    document.getElementById('dial').style.display = 'none';
+    document.getElementById('hangup').style.display = 'inline';    
+}
+
+function onRemoteHangUp() {
+    VOIPSession.prototype.onRemoteHangUp.call(this);
+    document.getElementById('accept').style.display = 'none';
+    document.getElementById('refuse').style.display = 'none';
+    document.getElementById('dial').style.display = 'inline';
+    document.getElementById('hangup').style.display = 'none';
+
+    voipSession = null;
+}
+
 //呼叫对方
 function onDialClick() {
     console.log("on dial click");
 
-    isCaller = true;
-    var voipSession = new VOIPSession(im, sessionHandler);
+    voipSession = new VOIPSession(im);
+
+    voipSession.onConnected = onConnected;
+
+    voipSession.onRemoteHangUp = onRemoteHangUp;
+    
     voipSession.uid = sender;
     voipSession.peer = peer;
-    voipSession.dial();
+    voipSession.isCaller = true;
+    voipSession.token = token;
 
-    im.voipObserver = voipSession;
+
+    var timeInMs = Date.now();
+    voipSession.channelID = "" + timeInMs;
+    
+    voipSession.cameraView = cameraView;
+    voipSession.remoteView = remoteView;
+    voipSession.dial();
+}
+
+function onAccept() {
+    console.log("on accept");
+    voipSession.accept();
+}
+
+function onRefuse() {
+    console.log("on refuse");
+    voipSession.refuse();
+}
+
+function onHangUp() {
+    console.log("on hangup");
+    voipSession.hangUp();
+    voipSession = null;
+    document.getElementById('accept').style.display = 'none';
+    document.getElementById('refuse').style.display = 'none';
+    document.getElementById('dial').style.display = 'inline';
+    document.getElementById('hangup').style.display = 'none';
 }
