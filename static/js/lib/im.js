@@ -6351,6 +6351,7 @@ IMService.MSG_RT = 17;
 IMService.MSG_ENTER_ROOM = 18;
 IMService.MSG_LEAVE_ROOM = 19;
 IMService.MSG_ROOM_IM = 20;
+IMService.MSG_SYSTEM = 21;
 
 IMService.MSG_CUSTOMER = 24;
 IMService.MSG_CUSTOMER_SUPPORT = 25;
@@ -6741,6 +6742,12 @@ IMService.prototype.onMessage = function (data) {
                 "saveSuperGroupSyncKey" in this.observer) {
                 this.observer.saveSuperGroupSyncKey(groupID, newSyncKey);
             }
+        }
+    } else if (cmd == IMService.MSG_SYSTEM) {
+        var content = buf.toString("utf8", IMService.HEADSIZE, IMService.HEADSIZE + len);
+        if (this.observer != null &&
+            "handleSystemMessage" in this.observer) {
+            this.observer.handleSystemMessage(content);
         }
     } else if (cmd == IMService.MSG_NOTIFICATION) {
         var content = buf.toString("utf8", IMService.HEADSIZE, IMService.HEADSIZE + len);
