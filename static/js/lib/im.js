@@ -6366,6 +6366,7 @@ IMService.MSG_SYNC_GROUP_NOTIFY = 33;
 IMService.MSG_SYNC_KEY = 34;
 IMService.MSG_GROUP_SYNC_KEY = 35;
 
+IMService.MSG_NOTIFICATION = 36;
 IMService.MSG_VOIP_CONTROL = 64;
 
 
@@ -6735,12 +6736,18 @@ IMService.prototype.onMessage = function (data) {
         }
         if (newSyncKey > groupSyncKey) {
             this.groupSyncKeys[groupID] = newSyncKey;
-            this.sendGroupSyncKey(groupID, syncKey);
+            this.sendGroupSyncKey(groupID, newSyncKey);
             if (this.observer != null &&
                 "saveSuperGroupSyncKey" in this.observer) {
                 this.observer.saveSuperGroupSyncKey(groupID, newSyncKey);
             }
         }
+    } else if (cmd == IMService.MSG_NOTIFICATION) {
+        var content = buf.toString("utf8", IMService.HEADSIZE, IMService.HEADSIZE + len);
+        if (this.observer != null &&
+            "handleNotification" in this.observer) {
+            this.observer.handleNotification(content);
+        }  
     } else {
         console.log("message command:" + cmd);
     }
