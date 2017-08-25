@@ -193,7 +193,7 @@ $(document).ready(function () {
 
     var r = util.getURLParameter('receiver', location.search);
     if (r) {
-        receiver = parseInt(r);
+        receiver = r;
     } else {
         receiver = 0;
     }
@@ -201,7 +201,7 @@ $(document).ready(function () {
 
     r = util.getURLParameter('sender', location.search);
     if (r) {
-        sender = parseInt(r);
+        sender = r;
     } else {
         sender = 0;
     }
@@ -220,7 +220,7 @@ $(document).ready(function () {
     showChat();
     //deal with chat mode.
     $("#entry").keypress(function (e) {
-        var target = parseInt($("#usersList").val());
+        var target = $("#usersList").val();
         if (e.keyCode != 13 /* Return */) return;
         var msg = $("#entry").val().replace("\n", "");
         if (!util.isBlank(msg)) {
