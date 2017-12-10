@@ -158,10 +158,10 @@ $(document).ready(function () {
             //if (msg.sender !== username)
             //    tip('message', msg.sender);
         },
-        handleMessageACK: function(msgLocalID, receiver) {
+        handleMessageACK: function(msg) {
             //console.log("message ack local id:", msgLocalID, " receiver:", receiver)
         },
-        handleMessageFailure: function(msgLocalID, receiver) {
+        handleMessageFailure: function(msg) {
             //console.log("message fail local id:", msgLocalID, " receiver:", receiver)
         },
 

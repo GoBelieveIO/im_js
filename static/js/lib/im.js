@@ -8206,7 +8206,7 @@ IMService.prototype.onClose = function() {
     for (var seq in this.messages) {
         var msg = this.messages[seq];
         if (this.observer != null && "handleMessageFailure" in this.observer){
-            this.observer.handleMessageFailure(msg.msgLocalID, msg.receiver);
+            this.observer.handleMessageFailure(msg);
         }
     }
     this.messages = {};
