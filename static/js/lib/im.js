@@ -131,18 +131,20 @@ exports.hton64 = function(b, i, v) {
 
 exports.ntoh64 = function(b, i) {
     var MAX_INT = 9007199254740992;
-    var low48 = ((0xff & b[i+2]) << 40)|
-            ((0xff & b[i+3]) << 32)|                
-            ((0xff & b[i+4]) << 24)|                
-            ((0xff & b[i+5]) << 16)|        
-            ((0xff & b[i+6]) << 8) |
-            ((0xff & b[i+7]));
-    low48 = bigInt(low48);
-    var high16 = ((0xff & b[i]) << 8) |
-                 (0xff & b[i+1])
-    high16 = bigInt(high16);
+
+    var low32 = ((0xff & b[i+4]) << 24)|                
+                ((0xff & b[i+5]) << 16)|        
+                ((0xff & b[i+6]) << 8) |
+                ((0xff & b[i+7]));
+
+    var high32 =  ((0xff & b[i]) << 24) |
+                  ((0xff & b[i+1]) << 16)|
+                  ((0xff & b[i+2]) << 8)|
+                  (0xff & b[i+3]);
+                  
+    var high = bigInt(high32);
     
-    var v = high16.shiftLeft(48).or(low48);
+    var v = high.shiftLeft(32).or(low32);
     if (v.gt(-MAX_INT) && v.lesser(MAX_INT)) {
         return v.toJSNumber();
     }
