@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "gobelieve sdk",
   "main": "lib/im.js",
+  "scripts": {
+      "build":"browserify -s IMService  . > static/js/lib/im.js",
+      "watch":"watchify --debug -s IMService  . -o static/js/lib/im.js"
+  },
   "dependencies": {
     "big-integer": "^1.6.24",
     "buffer": "^4.6.0",

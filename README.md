@@ -1,7 +1,5 @@
 #IM JS SDK
-browserify -s IMService  . > static/js/lib/im.js
 
-watchify --debug -s IMService  . -o static/js/lib/im.js
 
 ## IMService Methods
 
