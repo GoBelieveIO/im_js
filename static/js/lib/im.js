@@ -7793,6 +7793,9 @@ IMService.MSG_GROUP_SYNC_KEY = 35;
 
 IMService.MSG_NOTIFICATION = 36;
 
+//消息标志
+IMService.MESSAGE_FLAG_TEXT = 1;
+IMService.MESSAGE_FLAG_UNPERSISTENT = 2;
 
 IMService.PLATFORM_ID = 3;
 
@@ -7900,7 +7903,8 @@ IMService.prototype.onMessage = function (data) {
     var len = ntohl(buf, 0);
     var seq = ntohl(buf, 4);
     var cmd = buf[8];
-
+    var flag = buf[10];
+    
     if (len + IMService.HEADSIZE < buf.length) {
         console.log("invalid data length:" + buf.length + " " + len+IMService.HEADSIZE);
         return;
@@ -7963,6 +7967,9 @@ IMService.prototype.onMessage = function (data) {
         this.sendACK(seq);
     } else if (cmd == IMService.MSG_CUSTOMER) {
         var msg = {}
+        
+        msg.flag = flag;
+        
         msg.customerAppID = ntoh64(buf, pos);
         pos += 8;
 
@@ -8021,6 +8028,9 @@ IMService.prototype.onMessage = function (data) {
         }
     } else if (cmd == IMService.MSG_CUSTOMER_SUPPORT) {
         var msg = {}
+        
+        msg.flag = flag;
+        
         msg.customerAppID = ntoh64(buf, pos);
         pos += 8;
 
@@ -8280,7 +8290,7 @@ IMService.prototype.sendAuth = function() {
 }
 
 //typeof body == uint8array
-IMService.prototype.send = function (cmd, body) {
+IMService.prototype.send = function (cmd, body, nonpersistent) {
     if (this.socket == null) {
         return false;
     }
@@ -8299,9 +8309,16 @@ IMService.prototype.send = function (cmd, body) {
     pos++;
     buf[pos] = IMService.VERSION;
     pos++;
+
+    if (nonpersistent) {
+        buf[pos] = IMService.MESSAGE_FLAG_UNPERSISTENT;
+    } else {
+        buf[pos] = 0;
+    }
+    pos++;
     
-    buf.fill(2, pos, pos + 2);
-    pos += 2;
+    buf.fill(2, pos, pos + 1);
+    pos++;
 
     body.copy(buf, pos);
     pos += body.length;
@@ -8499,7 +8516,7 @@ IMService.prototype.sendCustomerSupportMessage = function (msg) {
     }
 
     var buf = this.writeCustomerMessage(msg);
-    var r = this.send(IMService.MSG_CUSTOMER_SUPPORT, buf);
+    var r = this.send(IMService.MSG_CUSTOMER_SUPPORT, buf, msg.nonpersistent);
     if (!r) {
         return false;
     }
@@ -8514,7 +8531,7 @@ IMService.prototype.sendCustomerMessage = function (msg) {
     }
 
     var buf = this.writeCustomerMessage(msg);
-    var r = this.send(IMService.MSG_CUSTOMER, buf);
+    var r = this.send(IMService.MSG_CUSTOMER, buf, msg.nonpersistent);
     if (!r) {
         return false;
     }
