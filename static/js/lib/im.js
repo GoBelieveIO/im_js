@@ -7750,7 +7750,10 @@ function IMService() {
     this.messages = {};
     this.groupMessages = {};
     this.customerMessages = {};
-
+    this.isSyncing = false;
+    this.syncTimestamp = 0;
+    this.pendingSyncKey = 0;
+    
     this.device_id = IMService.guid();
 }
 
@@ -7877,7 +7880,11 @@ IMService.prototype.onOpen = function () {
         this.sendEnterRoom(this.roomID);
     }
     this.sendSync(this.syncKey);
-
+    this.isSyncing = true;
+    var now = new Date().getTime() / 1000;    
+    this.syncTimestamp = now;
+    this.pendingSyncKey = 0;
+    
     for (var groupID in this.groupSyncKeys) {
         var s = this.groupSyncKeys[groupID];
         this.sendGroupSync(groupID, s);
@@ -8091,8 +8098,12 @@ IMService.prototype.onMessage = function (data) {
         pos += 8;
         console.log("sync notify:" + newSyncKey);
 
-        if (this.syncKey < newSyncKey) {
+        var now = new Date().getTime() / 1000;
+        var isSyncing = this.isSyncing && (now - this.syncTimestamp < 4);
+        if (!isSyncing && this.syncKey < newSyncKey) {
             this.sendSync(this.syncKey);
+        } else if (newSyncKey > this.pendingSyncKey) {
+            this.pendingSyncKey = newSyncKey;
         }
     } else if (cmd == IMService.MSG_SYNC_BEGIN) {
         newSyncKey = ntoh64(buf, pos);
@@ -8105,7 +8116,7 @@ IMService.prototype.onMessage = function (data) {
         pos += 8;
         
         console.log("sync end:" + newSyncKey);
-        if (newSyncKey > this.syncKey) {
+        if (newSyncKey != this.syncKey) {
             this.syncKey = newSyncKey;
             this.sendSyncKey(this.syncKey);
 
@@ -8115,6 +8126,19 @@ IMService.prototype.onMessage = function (data) {
             }
         }
 
+        if (this.observer != null &&
+            "handleSyncEnd" in this.observer) {
+            this.observer.handleSyncEnd(this.syncKey);
+        }
+
+        var now = new Date().getTime() / 1000;
+        this.isSyncing = false;
+        if (this.pendingSyncKey > this.syncKey) {
+            this.sendSync(this.syncKey);
+            this.isSyncing = true;
+            this.syncTimestamp = now;
+            this.pendingSyncKey = 0;
+        }
     } else if (cmd == IMService.MSG_SYNC_GROUP_NOTIFY) {
         var groupID = ntoh64(buf, pos)
         pos += 8;
