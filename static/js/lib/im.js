@@ -8214,7 +8214,7 @@ IMService.prototype.onError = function (err) {
     this.callStateObserver();
 
     var self = this;
-    f = function() {
+    var f = function() {
         self.connect()
     };
     setTimeout(f, this.connectFailCount*1000);
@@ -8251,7 +8251,7 @@ IMService.prototype.onClose = function() {
     this.groupMessages = {};
 
     var self = this;
-    f = function() {
+    var f = function() {
         self.connect();
     };
     setTimeout(f, 400);
