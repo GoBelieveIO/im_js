@@ -8350,8 +8350,8 @@ IMService.prototype.send = function (cmd, body, nonpersistent) {
     body.copy(buf, pos);
     pos += body.length;
 
-    if (global.ArrayBuffer && buf instanceof ArrayBuffer) {
-        this.socket.send(buf);
+    if (Buffer.TYPED_ARRAY_SUPPORT) {
+        this.socket.send(buf.buffer);        
     } else {
         var dataAsBase64String = buf.toString('base64');
         var data = {base64:true, data:dataAsBase64String};
