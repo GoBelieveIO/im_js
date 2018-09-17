@@ -7765,6 +7765,7 @@ IMService.STATE_CONNECTING = 1;
 IMService.STATE_CONNECTED = 2;
 IMService.STATE_CONNECTFAIL = 3;
 
+IMService.TIMEOUT = 3;//ack 超时3s,主动断开socket
 
 IMService.MSG_AUTH_STATUS = 3;
 IMService.MSG_IM = 4;
@@ -8402,6 +8403,12 @@ IMService.prototype.sendPeerMessage = function (msg) {
     }
 
     this.messages[this.seq] = msg;
+    
+    var self = this;
+    var t = IMService.TIMEOUT*1000+100;
+    setTimeout(function() {
+        self.checkAckTimeout();
+    }, t);
     return true;
 };
 
@@ -8434,6 +8441,13 @@ IMService.prototype.sendGroupMessage = function (msg) {
     }
 
     this.groupMessages[this.seq] = msg;
+
+    var self = this;
+    var t = IMService.TIMEOUT*1000+100;
+    setTimeout(function() {
+        self.checkAckTimeout();
+    }, t);
+    
     return true;
 };
 
@@ -8549,6 +8563,13 @@ IMService.prototype.sendCustomerSupportMessage = function (msg) {
     }
 
     this.customerMessages[this.seq] = msg;
+
+    var self = this;
+    var t = IMService.TIMEOUT*1000+100;
+    setTimeout(function() {
+        self.checkAckTimeout();
+    }, t);
+    
     return true;
 };
 
@@ -8564,7 +8585,43 @@ IMService.prototype.sendCustomerMessage = function (msg) {
     }
 
     this.customerMessages[this.seq] = msg;
+    
+    var self = this;
+    var t = IMService.TIMEOUT*1000+100;
+    setTimeout(function() {
+        self.checkAckTimeout();
+    }, t);
+    
     return true;
+};
+
+//检查是否有消息ack超时
+IMService.prototype.checkAckTimeout = function() {
+    var now = new Date().getTime() / 1000;
+    var isTimeout = false;
+    for (ack in this.messages) {
+        var msg = this.messages[ack];
+        if (now - msg.timestamp >= IMService.TIMEOUT) {
+            isTimeout = true;
+        }
+    }
+    for (ack in this.groupMessages) {
+        var msg = this.groupMessages[ack];
+        if (now - msg.timestamp >= IMService.TIMEOUT) {
+            isTimeout = true;
+        }
+    }
+    for (ack in this.customerMessages) {
+        var msg = this.customerMessages[ack];
+        if (now - msg.timestamp >= IMService.TIMEOUT) {
+            isTimeout = true;
+        }
+    }
+
+    if (isTimeout) {
+        console.log("ack timeout, close socket");
+        this.onClose();
+    }
 };
 
 
