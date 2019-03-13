@@ -10,6 +10,6 @@
   "dependencies": {
     "big-integer": "^1.6.24",
     "buffer": "^4.6.0",
-    "engine.io-client": "^1.6.8"
+    "engine.io-client": "^3.3.2"
   }
 }
