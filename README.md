@@ -5,9 +5,9 @@
 
 - **constructor**
     - Initializes the client
-    - **Parameters**
-      - `observer` (`Object`): optional, im service observer
 
+- observer
+    - handle messages that received from server
 - accessToken
     - property must be set before start
 
@@ -22,16 +22,18 @@
     - **Parameters**
       - `msg` (`Object`): message property(sender, receiver, content, msgLocalID)
 
-## IMService Observer
+- sendGroupMessage
+    - Send a message to peer
+    - **Parameters**
+      - `msg` (`Object`): message property(sender, receiver, content, msgLocalID)
 
+
+## IMService Observer
 - onConnectState
     - callback when im service connection state changed
     - **Parameters**
       - `state`:im service's connect state
 
-- onReset
-    - callback when current uid logined in other place
-    
 - handlePeerMessage
     - callback when im service received a peer message
     - **Parameters**
@@ -40,14 +42,28 @@
 - handleMessageACK
     - callback when im service received an ack of message
     - **Parameters**
-      - `msgLocalID` (`Number`): message local id
-      - `receiver` (`Number`): receiver's uid
+      - `msg` (`Object`): message property(sender, receiver, content, timestamp)
 
 - handleMessageFailure
     - callback when im service can't send out the message
     - **Parameters**
-      - `msgLocalID` (`Number`): message local id
-      - `receiver` (`Number`): receiver's uid
+      - `msg` (`Object`): message property(sender, receiver, content, timestamp)
+
+- handleGroupMessage
+    - callback when im service received a peer message
+    - **Parameters**
+      - `msg` (`Object`): message property(sender, receiver, content, timestamp)
+
+- handleGroupMessageACK
+    - callback when im service received an ack of message
+    - **Parameters**
+      - `msg` (`Object`): message property(sender, receiver, content, timestamp)
+
+- handleGroupMessageFailure
+    - callback when im service can't send out the message
+    - **Parameters**
+       - `msg` (`Object`): message property(sender, receiver, content, timestamp)
+
 
 
 ##example
