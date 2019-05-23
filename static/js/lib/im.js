@@ -3747,6 +3747,10 @@ IMService.prototype.onOpen = function () {
         self.onClose();
     };
 
+    this.connectFailCount = 0;
+    this.seq = 0;
+    this.connectState = IMService.STATE_CONNECTED;
+    
     this.sendAuth();
     if (this.roomID > 0) {
         this.sendEnterRoom(this.roomID);
@@ -3762,10 +3766,7 @@ IMService.prototype.onOpen = function () {
         this.sendGroupSync(groupID, s);
     }
 
-    this.connectFailCount = 0;
-    this.seq = 0;
-    this.connectState = IMService.STATE_CONNECTED;
-    this.callStateObserver();
+    this.callStateObserver();    
 };
 
 IMService.prototype.onMessage = function (data) {
