@@ -4146,8 +4146,6 @@ IMService.prototype.onMessage = function (data) {
     } else if (cmd == IMService.MSG_GROUP_NOTIFICATION) {
         msg.content = buf.toString("utf8", IMService.HEADSIZE, IMService.HEADSIZE + len);    
     } else if (cmd == IMService.MSG_CUSTOMER) {
-        var msg = {}
-
         msg.isSelf = isSelf;
         
         msg.customerAppID = ntoh64(buf, pos);
@@ -4167,8 +4165,6 @@ IMService.prototype.onMessage = function (data) {
 
         msg.content = buf.toString('utf8', IMService.HEADSIZE + 36, IMService.HEADSIZE + len);
     } else if (cmd == IMService.MSG_CUSTOMER_SUPPORT) {
-        var msg = {}
-
         msg.isSelf = isSelf;        
 
         msg.customerAppID = ntoh64(buf, pos);
@@ -4188,8 +4184,6 @@ IMService.prototype.onMessage = function (data) {
 
         msg.content = buf.toString('utf8', IMService.HEADSIZE + 36, IMService.HEADSIZE + len);
     } else if (cmd == IMService.MSG_RT) {
-        var msg = {}
-        
         msg.sender = ntoh64(buf, pos);
         pos += 8;
 
@@ -4198,8 +4192,6 @@ IMService.prototype.onMessage = function (data) {
 
         msg.content = buf.toString("utf8", IMService.HEADSIZE + 16, IMService.HEADSIZE + len);
     } else if (cmd == IMService.MSG_ROOM_IM) {
-        var msg = {}
-        
         msg.sender = ntoh64(buf, pos);
         pos += 8;
 
