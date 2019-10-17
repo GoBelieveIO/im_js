@@ -8,7 +8,6 @@
       "watch":"watchify --debug -s IMService  . -o static/js/lib/im.js"
   },
   "dependencies": {
-    "big-integer": "^1.6.42",
-    "buffer": "^5.2.1"
+    "big-integer": "^1.6.42"
   }
 }
