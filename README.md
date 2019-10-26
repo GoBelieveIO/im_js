@@ -123,3 +123,10 @@
 
 
 
+##微信小程序
+
+
+    var WebSocket = require('./websocket');
+    global.WebSocket = WebSocket;
+    global.ArrayBuffer = ArrayBuffer;
+    var IMService = require("./im");
