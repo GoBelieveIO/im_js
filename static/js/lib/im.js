@@ -2596,7 +2596,7 @@ IMService.prototype.sendRTMessage = function (msg) {
     hton64(buf, pos, msg.receiver);
     pos += 8;
 
-    len = buf.write(msg.content, pos);
+    len = buf.set(content, pos);
     pos += len;
 
     var r = this.send(IMService.MSG_RT, buf);
@@ -2649,7 +2649,7 @@ IMService.prototype.sendRoomMessage = function (msg) {
     hton64(buf, pos, msg.receiver);
     pos += 8;
 
-    len = buf.write(msg.content, pos);
+    len = buf.set(content, pos);
     pos += len;
 
 
@@ -2676,7 +2676,7 @@ IMService.prototype.writeCustomerMessage = function(msg) {
     pos += 8;
     htonl(buf, pos, msg.timestamp)
     pos += 4;
-    buf.write(msg.content, pos);
+    buf.set(content, pos);
     pos += len;
     return buf
 };
