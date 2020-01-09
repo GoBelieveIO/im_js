@@ -217,7 +217,9 @@ def access_token():
     user_name = obj["user_name"] if obj.has_key("user_name") else ""
     if not uid:
         return INVALID_PARAM()
-
+    if int(uid) > 10000:
+        return INVALID_PARAM()
+    
     logging.debug("obj:%s", obj)
     token = login(uid, user_name, obj.get('platform_id'), obj.get('device_id'))
     if not token:
