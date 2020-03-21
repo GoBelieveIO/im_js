@@ -1704,7 +1704,10 @@ function IMService() {
     this.isSyncing = false;
     this.syncTimestamp = 0;
     this.pendingSyncKey = 0;
-    
+
+    this.pingTimer = null;
+    this.pingTimestamp = 0;
+    this.ping = this.ping.bind(this);
     this.device_id = IMService.guid();
 }
 
@@ -1726,6 +1729,8 @@ IMService.MSG_RST = 6;
 IMService.MSG_GROUP_NOTIFICATION = 7;
 IMService.MSG_GROUP_IM = 8;
 IMService.MSG_PEER_ACK = 9;
+IMService.MSG_PING = 13;
+IMService.MSG_PONG = 14;
 IMService.MSG_AUTH_TOKEN = 15;
 IMService.MSG_RT = 17;
 IMService.MSG_ENTER_ROOM = 18;
@@ -1759,7 +1764,7 @@ IMService.MESSAGE_FLAG_PUSH = 16;
 IMService.MESSAGE_FLAG_SUPER_GROUP = 32;
 
 IMService.PLATFORM_ID = 3;
-
+IMService.HEARTBEAT = 60*3;
 
 IMService.prototype.start = function () {
     if (!this.stopped) {
@@ -1769,6 +1774,7 @@ IMService.prototype.start = function () {
     console.log("start im service");
     this.stopped = false;
     this.connect()
+    this.pingTimer = setInterval(this.ping, IMService.HEARTBEAT*1000);
 };
 
 IMService.prototype.stop = function () {
@@ -1784,6 +1790,8 @@ IMService.prototype.stop = function () {
     console.log("close socket");
     this.socket.close();
     this.socket = null;
+    clearInterval(this.pingTimer);
+    this.pingTimer = null;
 };
 
 IMService.prototype.callStateObserver = function () {
@@ -1822,6 +1830,30 @@ IMService.prototype.connect = function () {
         self.onError(event);        
     };    
 };
+
+IMService.prototype.ping = function () {
+    if (this.connectState != IMService.STATE_CONNECTED) {
+        return false;
+    }
+    console.log("ping...");
+    this.sendPing()
+    if (this.pingTimestamp == 0) {
+        this.pingTimestamp = Math.floor(new Date().getTime()/1000);
+    }
+
+    var self = this;
+    setTimeout(function() {
+        var now = Math.floor(new Date().getTime()/1000);
+        if (self.pingTimestamp > 0 && now - self.pingTimestamp >= 3) {
+            console.log("ping timeout");
+            if (self.connectState == IMService.STATE_CONNECTED) {
+                //trigger close event                
+                self.socket.close();
+                self.socket = null;
+            }
+        }
+    }, 3100);
+}
 
 IMService.prototype.onOpen = function () {
     console.log("socket opened");
@@ -2137,6 +2169,9 @@ IMService.prototype.handleMessage = function(msg) {
         }
     } else if (cmd == IMService.MSG_METADATA) {
         this.metaMessage = msg;
+    } else if (cmd == IMService.MSG_PONG) {
+        console.log("pong");
+        this.pingTimestamp = 0;
     } else {
         console.log("message command:" + cmd);
     }
@@ -2444,6 +2479,12 @@ IMService.prototype.sendAuth = function() {
 
     this.send(IMService.MSG_AUTH_TOKEN, body);
 }
+
+IMService.prototype.sendPing = function() {
+    var body = new Uint8Array(0);
+    this.send(IMService.MSG_PING, body);
+}
+
 
 //typeof body == uint8array
 IMService.prototype.send = function (cmd, body, nonpersistent) {
