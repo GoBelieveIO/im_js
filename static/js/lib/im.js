@@ -1720,7 +1720,7 @@ IMService.STATE_CONNECTED = 2;
 IMService.STATE_CONNECTFAIL = 3;
 IMService.STATE_AUTHENTICATION_FAIL = 4;
 
-IMService.TIMEOUT = 3;//ack 超时3s,主动断开socket
+IMService.ACK_TIMEOUT = 3;//ack 超时3s,主动断开socket
 
 IMService.MSG_AUTH_STATUS = 3;
 IMService.MSG_IM = 4;
@@ -2374,7 +2374,12 @@ IMService.prototype.onError = function (err) {
     var f = function() {
         self.connect()
     };
-    setTimeout(f, this.connectFailCount*1000);
+
+    var timeout = this.connectFailCount*1000;
+    if (this.connetFailCount > 60) {
+        timeout = 60*1000;
+    }
+    setTimeout(f, timeout);
 };
 
 IMService.prototype.onClose = function() {
@@ -2573,7 +2578,7 @@ IMService.prototype.sendPeerMessage = function (msg) {
     this.messages[this.seq] = msg;
     
     var self = this;
-    var t = IMService.TIMEOUT*1000+100;
+    var t = IMService.ACK_TIMEOUT*1000+100;
     setTimeout(function() {
         self.checkAckTimeout();
     }, t);
@@ -2612,7 +2617,7 @@ IMService.prototype.sendGroupMessage = function (msg) {
     this.groupMessages[this.seq] = msg;
 
     var self = this;
-    var t = IMService.TIMEOUT*1000+100;
+    var t = IMService.ACK_TIMEOUT*1000+100;
     setTimeout(function() {
         self.checkAckTimeout();
     }, t);
@@ -2736,7 +2741,7 @@ IMService.prototype.sendCustomerSupportMessage = function (msg) {
     this.customerMessages[this.seq] = msg;
 
     var self = this;
-    var t = IMService.TIMEOUT*1000+100;
+    var t = IMService.ACK_TIMEOUT*1000+100;
     setTimeout(function() {
         self.checkAckTimeout();
     }, t);
@@ -2758,7 +2763,7 @@ IMService.prototype.sendCustomerMessage = function (msg) {
     this.customerMessages[this.seq] = msg;
     
     var self = this;
-    var t = IMService.TIMEOUT*1000+100;
+    var t = IMService.ACK_TIMEOUT*1000+100;
     setTimeout(function() {
         self.checkAckTimeout();
     }, t);
@@ -2773,19 +2778,19 @@ IMService.prototype.checkAckTimeout = function() {
     var ack;
     for (ack in this.messages) {
         var msg = this.messages[ack];
-        if (now - msg.timestamp >= IMService.TIMEOUT) {
+        if (now - msg.timestamp >= IMService.ACK_TIMEOUT) {
             isTimeout = true;
         }
     }
     for (ack in this.groupMessages) {
         var msg = this.groupMessages[ack];
-        if (now - msg.timestamp >= IMService.TIMEOUT) {
+        if (now - msg.timestamp >= IMService.ACK_TIMEOUT) {
             isTimeout = true;
         }
     }
     for (ack in this.customerMessages) {
         var msg = this.customerMessages[ack];
-        if (now - msg.timestamp >= IMService.TIMEOUT) {
+        if (now - msg.timestamp >= IMService.ACK_TIMEOUT) {
             isTimeout = true;
         }
     }
