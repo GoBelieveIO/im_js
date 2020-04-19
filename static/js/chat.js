@@ -224,9 +224,10 @@ $(document).ready(function () {
         if (e.keyCode != 13 /* Return */) return;
         var msg = $("#entry").val().replace("\n", "");
         if (!util.isBlank(msg)) {
+            var now = new Date().getTime() / 1000;
             var obj = {"text": msg};
             var textMsg = JSON.stringify(obj);
-            var message = {sender:username, receiver: target, content: textMsg, msgLocalID:msgLocalID++};
+            var message = {sender:username, receiver: target, content: textMsg, timestamp:now, msgLocalID:msgLocalID++};
             if (im.connectState == IMService.STATE_CONNECTED) {
                 im.sendPeerMessage(message);
                 $("#entry").val(""); // clear the entry field.
