@@ -69,38 +69,47 @@
 ##example
 
 
-
-    <script src="/engine.io.js"></script>
-    <script src="/json2.js"></script>
     <script src="/im.js"></script>
     <script>
       var observer = {
-          handlePeerMessage: function (msg) {
-              console.log("msg sender:", msg.sender, " receiver:", msg.receiver, " content:", msg.content, " timestamp:", msg.timestamp)
-          },
-          handleMessageACK: function(msgLocalID, receiver) {
-              console.log("message ack local id:", msgLocalID, " receiver:", receiver)
-          },
-          handleMessageFailure: function(msgLocalID, receiver) {
-              console.log("message fail local id:", msgLocalID, " receiver:", receiver)
-          },
-          onConnectState: function(state) {
-              if (state == IMService.STATE_CONNECTED) {
-                 console.log("im connected");
-              } else if (state == IMService.STATE_CONNECTING) {
-                 console.log("im connecting");
-              } else if (state == IMService.STATE_CONNECTFAIL) {
-                 console.log("im connect fail");
-              } else if (state == IMService.STATE_UNCONNECTED) {
-                 console.log("im unconnected");
-              }
-          },
-          onReset: function() {
-              console.log("reset");
-          }
+        handlePeerMessage: function (msg) {
+            console.log("msg sender:", msg.sender, " receiver:", msg.receiver, " content:", msg.content, " timestamp:", msg.timestamp)
+        },
+        handleMessageACK: function(msg) {
+            console.log("message ack local id:", msgLocalID, " receiver:", receiver)
+        },
+        handleMessageFailure: function(msg) {
+            console.log("message fail local id:", msgLocalID, " receiver:", receiver)
+        },
+        onConnectState: function(state) {
+            if (state == IMService.STATE_CONNECTED) {
+               console.log("im connected");
+            } else if (state == IMService.STATE_CONNECTING) {
+               console.log("im connecting");
+            } else if (state == IMService.STATE_CONNECTFAIL) {
+               console.log("im connect fail");
+            } else if (state == IMService.STATE_UNCONNECTED) {
+               console.log("im unconnected");
+            }
+        },
+
+        handleGroupMessage: function(msg) {
+            console.log("group msg sender:", msg.sender, " receiver:", msg.receiver, " content:", msg.content, " timestamp:", msg.timestamp)
+        },
+        handleGroupMessageACK: function(msg) {
+            console.log("group message ack:", msg);
+        },
+        handleGroupMessageFailure: function(msg) {
+            console.log("group message fail:", msg);
+        },
+        handleGroupNotification(notification) {
+            var obj = JSON.parse(notification);
+            console.log("group notification:", obj);
+        },
       }
       
-      var im = new IMService(observer);
+      var im = new IMService();
+      im.observer = observer;
       im.accessToken = "????";
       im.start()
 
@@ -110,6 +119,7 @@
       var r = im.sendPeerMessage(msg);
       //r == false
       console.log("send message result:", r);
+
 
       function send() {
           var msg = {sender:100, receiver:100, content:"11", msgLocalID:1000}
