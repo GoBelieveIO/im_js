@@ -1709,7 +1709,8 @@ function IMService() {
     this.pingTimer = null;
     this.pingTimestamp = 0;
     this.ping = this.ping.bind(this);
-    this.device_id = IMService.guid();
+    this.platformID = IMService.PLATFORM_WEB;
+    this.deviceID = IMService.guid();
 }
 
 IMService.HEADSIZE = 12;
@@ -1764,7 +1765,12 @@ IMService.MESSAGE_FLAG_SELF = 8;
 IMService.MESSAGE_FLAG_PUSH = 16;
 IMService.MESSAGE_FLAG_SUPER_GROUP = 32;
 
-IMService.PLATFORM_ID = 3;
+IMService.PLATFORM_IOS = 1;
+IMService.PLATFORM_ANDROID = 2;
+IMService.PLATFORM_WEB = 3;
+IMService.PLATFORM_WIN = 4;
+IMService.PLATFORM_OSX = 5;
+
 IMService.HEARTBEAT = 60*3;
 
 IMService.prototype.start = function () {
@@ -2483,7 +2489,7 @@ IMService.prototype.sendAuth = function() {
     var pos = 0;
     var len = 0;
 
-    buf[pos] = IMService.PLATFORM_ID;
+    buf[pos] = this.platformID;
     pos++;
 
     var accessToken = utf8.encodeUTF8(this.accessToken);
@@ -2493,7 +2499,7 @@ IMService.prototype.sendAuth = function() {
     buf.set(accessToken, pos);
     pos += len;
 
-    var deviceId = utf8.encodeUTF8(this.device_id);
+    var deviceId = utf8.encodeUTF8(this.deviceID);
     len = deviceId.length;
     buf[pos] = len;
     pos++;
