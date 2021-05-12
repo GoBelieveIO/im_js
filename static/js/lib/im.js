@@ -1,4 +1,4 @@
-(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.IMService = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.IMService = f()}})(function(){var define,module,exports;return (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 /* Copyright 2010 Membase, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -1665,7 +1665,7 @@ if (typeof define === "function" && define.amd) {
 }
 
 },{}],4:[function(require,module,exports){
-(function (global){
+(function (global){(function (){
 var order = require('./byte_order');
 var utf8 = require("./utf8");
 
@@ -1674,7 +1674,7 @@ var ntoh64 = order.ntoh64;
 var htonl = order.htonl;
 var ntohl = order.ntohl;
 
-module.exports = IMService;
+    
 
 function IMService() {
     this.host = "imnode2.gobelieve.io";
@@ -1690,13 +1690,16 @@ function IMService() {
     this.groupSyncKeys = {};
 
     this.observer = null;
-    this.voipObserver = null;
 
     this.socket = null;
     this.connectFailCount = 0;
     this.connectState = IMService.STATE_UNCONNECTED;
     this.seq = 0;
     this.stopped = true;
+    this.suspended = true;
+    this.reachable = true;
+    this.isBackground = false;
+    
     this.roomID = 0;
     //sending message
     this.messages = {};
@@ -1773,6 +1776,67 @@ IMService.PLATFORM_OSX = 5;
 
 IMService.HEARTBEAT = 60*3;
 
+
+
+IMService.prototype.handleConnectivityChange = function(reach) {
+    console.log("connectivity changed:" + reach);
+    this.reachable = reach && (reach.toLowerCase() == 'wifi' || reach.toLowerCase() == 'cell');
+
+    console.log("reachable:", reach, this.reachable);
+    if (this.reachable) {
+        if (!this.stopped && !this.isBackground) {
+            console.log("reconnect im service");
+            this.suspend();
+            this.resume();
+        }
+    } else if (!this.reachable) {
+        this.suspend();
+    }
+}
+
+
+IMService.prototype.enterBackground = function() {
+    this.isBackground = true;
+    if (!this.stopped) {
+        this.suspend();
+    }
+}
+
+IMService.prototype.enterForeground = function() {
+    this.isBackground = false;
+    if (!this.stopped) {
+        this.resume();
+    }
+}
+
+IMService.prototype.suspend = function() {
+    if (this.suspended) {
+        return;
+    }
+    console.log("suspend im service");
+    this.suspended = true;
+
+    console.log("close socket");
+    var sock = this.socket;
+    if (sock) {
+        //trigger socket onClose event
+        sock.close();
+    }
+    clearInterval(this.pingTimer);
+    this.pingTimer = null;
+}
+
+IMService.prototype.resume = function() {
+    if (!this.suspended) {
+        return;
+    }
+    console.log("resume im service");
+    this.suspended = false;
+
+    this.connect();
+    this.pingTimer = setInterval(this.ping, IMService.HEARTBEAT*1000);
+}
+
 IMService.prototype.start = function () {
     if (!this.stopped) {
         console.log("im service already be started");
@@ -1780,8 +1844,7 @@ IMService.prototype.start = function () {
     }
     console.log("start im service");
     this.stopped = false;
-    this.connect()
-    this.pingTimer = setInterval(this.ping, IMService.HEARTBEAT*1000);
+    this.resume();
 };
 
 IMService.prototype.stop = function () {
@@ -1791,14 +1854,7 @@ IMService.prototype.stop = function () {
     }
     console.log("stop im service");
     this.stopped = true;
-    if (this.socket == null) {
-        return;
-    }
-    console.log("close socket");
-    this.socket.close();
-    this.socket = null;
-    clearInterval(this.pingTimer);
-    this.pingTimer = null;
+    this.suspend();
 };
 
 IMService.prototype.callStateObserver = function () {
@@ -1808,8 +1864,8 @@ IMService.prototype.callStateObserver = function () {
 };
 
 IMService.prototype.connect = function () {
-    if (this.stopped) {
-        console.log("im service stopped");
+    if (this.stopped || this.suspended)  {
+        console.log("im service stopped||suspended");
         return;
     }
     if (this.socket != null) {
@@ -1873,8 +1929,8 @@ IMService.prototype.onOpen = function () {
     this.socket.onmessage = function(message) {
         self.onMessage(message.data)
     };
-    this.socket.onclose = function() {
-        console.log("socket disconnect");
+    this.socket.onclose = function(e) {
+        console.log("socket disconnect:", e);
         self.onClose();
     };
 
@@ -2849,6 +2905,8 @@ IMService.guid = function () {
            s4() + '-' + s4() + s4() + s4();
 }
 
-}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+module.exports = IMService;
+
+}).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{"./byte_order":1,"./utf8":2}]},{},[4])(4)
 });
