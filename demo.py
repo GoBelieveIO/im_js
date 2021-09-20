@@ -9,7 +9,11 @@ import flask
 from functools import wraps
 import flask
 import random
-import md5
+
+
+import hashlib
+
+
 import json
 import logging
 import sys
@@ -22,6 +26,10 @@ import config
 
 app = Flask(__name__)
 app.debug = config.DEBUG
+
+
+def md5(s):
+    return hashlib.md5(s.encode(encoding='utf8')).hexdigest()
 
 
 def INVALID_PARAM():
@@ -68,16 +76,15 @@ def login(uid, uname, platform_id, device_id):
         obj['platform_id'] = platform_id
         obj['device_id'] = device_id
 
-    m = md5.new(config.APP_SECRET)
-    secret = m.hexdigest()
+    secret = md5(config.APP_SECRET)
 
-    basic = base64.b64encode(str(config.APP_ID) + ":" + secret)
+    basic = base64.b64encode((str(config.APP_ID) + ":" + secret).encode(encoding="utf8"))
+    basic = basic.decode("utf-8")
     headers = {'Content-Type': 'application/json; charset=UTF-8',
                'Authorization': 'Basic ' + basic}
      
     res = requests.post(url, data=json.dumps(obj), headers=headers)
     if res.status_code != 200:
-        print res
         return None
     obj = json.loads(res.text)
     return obj["data"]["token"]
@@ -85,8 +92,8 @@ def login(uid, uname, platform_id, device_id):
 
 @app.route("/login", methods=["POST"])
 def login_session():
-    sender = int(request.form['sender']) if request.form.has_key('sender') else 0
-    receiver = int(request.form['receiver']) if request.form.has_key('receiver') else 0
+    sender = int(request.form['sender']) if 'sender' in request.form else 0
+    receiver = int(request.form['receiver']) if 'receiver' in request.form else 0          
 
     if sender == 0 or receiver == 0:
         return error_html
@@ -115,8 +122,8 @@ def customer_chat():
 
 @app.route('/customer/login', methods=["POST"])
 def customer_login():
-    sender = int(request.form['sender']) if request.form.has_key('sender') else 0
-    receiver = int(request.form['receiver']) if request.form.has_key('receiver') else 0
+    sender = int(request.form['sender']) if 'sender' in request.form else 0
+    receiver = int(request.form['receiver']) if 'receiver' in request.form else 0        
 
     if sender == 0 or receiver == 0:
         return error_html
@@ -141,8 +148,8 @@ def room_chat():
 
 @app.route('/room/login', methods=["POST"])
 def room_login():
-    sender = int(request.form['sender']) if request.form.has_key('sender') else 0
-    receiver = int(request.form['receiver']) if request.form.has_key('receiver') else 0
+    sender = int(request.form['sender']) if 'sender' in request.form else 0
+    receiver = int(request.form['receiver']) if 'receiver' in request.form else 0
 
     if sender == 0 or receiver == 0:
         return error_html
@@ -168,8 +175,8 @@ def group_chat():
 
 @app.route('/group/login', methods=["POST"])
 def group_login():
-    sender = int(request.form['sender']) if request.form.has_key('sender') else 0
-    receiver = int(request.form['receiver']) if request.form.has_key('receiver') else 0
+    sender = int(request.form['sender']) if 'sender' in request.form else 0
+    receiver = int(request.form['receiver']) if 'receiver' in request.form else 0    
 
     if sender == 0 or receiver == 0:
         return error_html
@@ -213,8 +220,8 @@ def access_token():
         return INVALID_PARAM()
 
     obj = json.loads(request.data)
-    uid = obj["uid"] if obj.has_key("uid") else None
-    user_name = obj["user_name"] if obj.has_key("user_name") else ""
+    uid = obj.get("uid", None)
+    user_name = obj.get("user_name", "")
     if not uid:
         return INVALID_PARAM()
     if int(uid) > 10000:
