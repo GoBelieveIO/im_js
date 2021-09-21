@@ -3,3 +3,8 @@
 *.pyc
 .DS_Store
 node_modules
+yarn-error.log
+yarn.lock
+demo/config.py
+demo/run.sh
+demo/stop.sh
