@@ -6,26 +6,49 @@
         <title>
             example
         </title>
-        <link rel="stylesheet" href="/static/css/customer.css" type="text/css" />
-
+        <!-- <link rel="stylesheet" href="/static/css/customer.css" type="text/css" /> -->
+        <link rel="stylesheet" href="/static/css/style.css" type="text/css" />
     </head>
 
     <body>
-        <div class="main pane pane-chat" id="main">
-            <div class="pane-header pane-chat-header">
-                <img src="/static/images/_avatar.png" id="to_user_avatar" class="avatar" alt=""/>
+        <!-- <div class="main pane pane-chat" id="main">
+             <div class="pane-header pane-chat-header">
+             <img src="/static/images/_avatar.png" id="to_user_avatar" class="avatar" alt=""/>
 
-                <div class="name" id="to_user"></div>
+             <div class="name" id="to_user"></div>
+             </div>
+             <div class="chat-list" id="chatHistory">
+             <ul>
+             </ul>
+             </div>
+             <div class="chat-form pane-chat-footer">
+             <textarea id="entry" class="chat-input"></textarea>
+             </div>
+             </div> -->
+
+
+        <div id="app">
+            <div id="chatHistory">
             </div>
-            <div class="chat-list" id="chatHistory">
-                <ul>
+            <div id="toolbar">
+                <ul id="status">
+                    <li>
+                        users:
+                        <select name="users" id="usersList">
+
+                        </select>
+                    </li>
+                    <li>
+                        name:
+                        <span id="name">
+                        </span>
+                    </li>
                 </ul>
-            </div>
-            <div class="chat-form pane-chat-footer">
-                <textarea id="entry" class="chat-input"></textarea>
+                <input tabindex="1" type="text" id="entry" />
             </div>
         </div>
-
+        
+        
         <script src="/static/js/lib/jquery-1.11.1.js" type="text/javascript"></script>
         <script src="/static/js/lib/console.js" type="text/javascript"></script>
         <script src="/static/js/lib/json2.js"></script>

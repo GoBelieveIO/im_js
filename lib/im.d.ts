@@ -9,20 +9,49 @@ export interface IMMessage {
     receiver:number;
     timestamp:number;
     content:string;
-    isSelf:boolean;
+    isSelf?:boolean;
 }
 
+export interface CustomerMessage extends IMMessage {
+    senderAppID:number;
+    receiverAppID:number;
+}
 
-export interface Observer {
-    onConnectState?(state:number);
-    handlePeerMessage?(msg:any);
-    handleMessageACK?(msg);
-    handleMessageFailure?(msg);
-    handleGroupMessage?(msg);
+export interface PeerMessageObserver {
+    handlePeerMessage(msg:any);
+    handlePeerMessageACK?(msg);
+    handlePeerMessageFailure?(msg);
+}
+
+export interface GroupMessageObserver {
+    handleGroupMessage(msg);
     handleGroupMessageACK?(msg);
     handleGroupMessageFailure?(msg);
     handleGroupNotification?(msg);
-    handleRTMessage?(msg);
+}
+
+export interface CustomerMessageObserver {
+    handleCustomerMessage(msg);
+    handleCustomerMessageACK?(msg);
+    handleCustomerMessageFailure?(msg);
+}
+
+export interface RTMessageObserver {
+    handleRTMessage(msg);
+}
+
+export interface SystemMessageObserver {
+    handleSystemMessage(msg);
+}
+
+export interface RoomMessageObserver {
+    handleRoomMessage(msg);
+}
+
+export interface Observer {
+    onConnectState?(state:number);
+    handleNotification?(msg);
+    saveSyncKey?(syncKey);
 }
 
 export default class IMService {
@@ -33,13 +62,19 @@ export default class IMService {
     syncKey:number;
     deviceID:string;
     platformID:number;
-    observer:Observer;
+    peerMessageObserver?:PeerMessageObserver;
+    groupMessageObserver?:GroupMessageObserver;
+    customerMessageObserver?:CustomerMessageObserver;
+    rtMessageObserver?:RTMessageObserver;
+    systemMessageObserver?:SystemMessageObserver;
+    roomMessageObserver?:RoomMessageObserver;
+    observer?:Observer;
+
     connectState:number;
     sendPeerMessage(IMMessage);
     sendGroupMessage(IMMessage);
     sendRTMessage(RTMessage);
-    sendCustomerMessage(msg:any);
-    sendCustomerSupportMessage(msg:any);
+    sendCustomerMessage(msg:CustomerMessage);
     enterRoom(roomID:number);
     leaveRoom(roomID:number);
     handleConnectivityChange(reach:string);

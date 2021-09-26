@@ -1,169 +1,17 @@
+var username;
+var receiver;
+var users;
 var base = 1000;
 var msgLocalID=0;
 var increase = 25;
 
-var sellerID = 0;
-var storeID = 0;
 var appID = 7;
 var uid = 0;
 
-var IMService = gobelieve.IMService;
+var receiver = 0;
 
-String.format = function() {
-    if( arguments.length == 0 )
-        return null;
-
-    var str = arguments[0]; 
-    for(var i=1;i<arguments.length;i++) {
-        var re = new RegExp('\\{' + (i-1) + '\\}','gm');
-        str = str.replace(re, arguments[i]);
-    }
-    return str;
-};
-
-var helper = {
-    toTime: function (ts) {
-        //时间戳取时间
-        var d = ts ? new Date(ts) : new Date();
-        var H = d.getHours();
-        var m = d.getMinutes();
-        return H + ':' + (m < 10 ? '0' + m : m);
-    },
-    getUserName: function (user) {
-        if (user.name) {
-            return user.name;
-        } else {
-            return "匿名("+user.uid+")";
-        }
-    },
-    getUserAvatar: function (user) {
-        if (user.avatar) {
-            var parser = document.createElement('a');
-            parser.href = user.avatar;
-            return parser.pathname;
-        } else {
-            return '';
-        }
-    },
-};
-
-var htmlLoyout = {
-    buildText: function (msg) {
-        var html = [];
-        html.push('<li class="chat-item" data-id="' + msg.id + '">');
-        html.push('    <div class="message ' + msg.cls + '">');
-        html.push('        <div class="bubble"><p class="pre">' + msg.text + '</p>');
-        html.push('           <span class="time">' + helper.toTime(msg.timestamp * 1000) + '</span>');
-
-        if (msg.ack) {
-            html.push('   <span class="ack"></span>');
-        }
-
-        html.push('        </div>');
-        html.push('    </div>');
-        html.push('</li>');
-        return html.join('');
-    },
-    buildImage: function (msg) {
-        var html = [];
-        html.push('<li class="chat-item"  data-id="' + msg.id + '">');
-        html.push('    <div class="message">');
-        html.push('        <div class="bubble"><p class="pre"><a href="' + msg.image + '" target="_blank">' +
-            '<img class="image-thumb-body" src="' + msg.image + '" /></p></a>');
-        html.push('           <span class="time">' + helper.toTime(msg.timestamp * 1000) + '</span>');
-
-        if (msg.ack) {
-            html.push('   <span class="ack"></span>');
-        }
-
-        html.push('        </div>');
-        html.push('    </div>');
-        html.push('</li>');
-        return html.join('');
-    },
-    buildAudio: function (msg) {
-        var html = [];
-        html.push('<li class="chat-item"  data-id="' + msg.id + '">');
-        var audio_url = msg.audio.url + ".mp3";
-        html.push('<li class="chat-item">');
-        html.push('  <div class="message ' + msg.cls + '">');
-        html.push('     <div class="bubble">');
-        html.push('       <p class="pre"><audio  controls="controls" src="' + audio_url + '"></audio></p>');
-        html.push('       <span class="time">' + helper.toTime(msg.timestamp * 1000) + '</span>');
-   
-        if (msg.ack) {
-            html.push('   <span class="ack"></span>');
-        }
-
-        html.push('     </div>');
-        html.push('  </div>');
-        html.push('</li>');
-        return html.join('');
-    },
-    buildACK: function () {
-        return '<span class="ack"></span>';
-    },
-};
-
-var node = {
-    chatHistory: $("#chatHistory ul"),
-};
-
-var process = {
-    playAudio: function () {
-
-    },
-    appendAudio: function (m) {
-        node.chatHistory.append(htmlLoyout.buildAudio(m));
-    },
-    appendText: function (m) {
-        node.chatHistory.append(htmlLoyout.buildText(m));
-    },
-    appendImage: function (m) {
-        node.chatHistory.append(htmlLoyout.buildImage(m));
-    },
-    msgACK: function (msgID) {
-        node.chatHistory.find('li[data-id="' + msgID + '"] .bubble').append(htmlLoyout.buildACK());
-    },
-};
-
-function scrollDown() {
-    $('#chatHistory').scrollTop($('#chatHistory ul').outerHeight());
-    $("#entry").text('').focus();
-}
-
-function appendMessage(msg) {
-    var time = new Date();
-    var m = {};
-    m.id = msg.msgLocalID;
-    if (msg.timestamp) {
-        time.setTime(msg.timestamp * 1000);
-        m.timestamp = msg.timestamp;
-    }
-    m.ack = msg.ack;
-
-    if (msg.outgoing) {
-        m.cls = "message-out";
-    } else {
-        m.cls = "message-in";
-    }
-    if (msg.contentObj.text) {
-        m.text = util.toStaticHTML(msg.contentObj.text);
-        process.appendText(m);
-    } else if (msg.contentObj.audio) {
-        m.audio = msg.contentObj.audio;
-        process.appendAudio(m);
-    } else if (msg.contentObj.image) {
-        m.image = msg.contentObj.image;
-        process.appendImage(m);
-    }
-}
-
-// add message on board
-function addMessage(msg) {
-    appendMessage(msg);
-    scrollDown();
-}
+//客服appid
+var receiverAppID = 17;
 
 
 util = {
@@ -217,6 +65,7 @@ util = {
         }
         return ""
     },
+
 };
 
 //always view the most recent message when it is added
@@ -225,117 +74,191 @@ function scrollDown(base) {
     $("#entry").focus();
 }
 
-observer = {
-    handleCustomerMessage: function(msg) {
-        if (msg.customerID != uid || msg.customerAppID != appID) {
-            return;
-        }
-        try {
-            msg.contentObj = JSON.parse(msg.content)
-        } catch (e) {
-            console.log("json parse exception:", e);
-            return
-        }
-
-        sellerID = msg.sellerID;
-        msg.outgoing = true;
-        msg.msgLocalID = msgLocalID++;
-        addMessage(msg);
-    },
-    handleCustomerSupportMessage: function(msg) {
-        if (msg.customerID != uid || msg.customerAppID != appID) {
-            return;
-        }
-        try {
-            msg.contentObj = JSON.parse(msg.content)
-        } catch (e) {
-            console.log("json parse exception:", e);
-            return
-        }
-
-        sellerID = msg.sellerID;
-        msg.outgoing = false;
-        msg.msgLocalID = msgLocalID++;
-        addMessage(msg)
-    },
-    handleCustomerMessageACK: function(msg) {
-        console.log("handleCustomerMessageACK...");
-        var msgLocalID = msg.msgLocalID;
-        process.msgACK(msgLocalID);
-    },
-    handleCustomerMessageFailure: function(msg) {
-        console.log("handleCustomerMessageFailure...");
-    },
-
-    onConnectState: function(state) {
-        if (state == IMService.STATE_CONNECTED) {
-            console.log("im connected");
-        } else if (state == IMService.STATE_CONNECTING) {
-            console.log("im connecting");
-        } else if (state == IMService.STATE_CONNECTFAIL) {
-            console.log("im connect fail");
-        } else if (state == IMService.STATE_UNCONNECTED) {
-            console.log("im unconnected");
-        }
+// add message on board
+function addMessage(from, target, text, time) {
+    var name = (target == '*' ? 'all' : target);
+    if (text === null) return;
+    if (time == null) {
+        // if the time is null or undefined, use the current time.
+        time = new Date();
+    } else if ((time instanceof Date) === false) {
+        // if it's a timestamp, interpret it
+        time = new Date(time);
     }
-};
+    //every message you see is actually a table with 3 cols:
+    //  the time,
+    //  the person who caused the event,
+    //  and the content
+    var messageElement = $(document.createElement("table"));
+    messageElement.addClass("message");
+    // sanitize
+    text = util.toStaticHTML(text);
+    var content = '<tr>' + '  <td class="date">' + util.timeString(time) + '</td>' + '  <td class="nick">' + util.toStaticHTML(from) + ' says to ' + name + ': ' + '</td>' + '  <td class="msg-text">' + text + '</td>' + '</tr>';
+    messageElement.html(content);
+    //the log is the stream that we view
+    $("#chatHistory").append(messageElement);
+    base += increase;
+    scrollDown(base);
+}
 
-var im = new IMService();
-im.observer = observer;
+// show tip
+function tip(type, name) {
+    var tip, title;
+    switch (type) {
+        case 'online':
+            tip = name + ' is online now.';
+            title = 'Online Notify';
+            break;
+        case 'offline':
+            tip = name + ' is offline now.';
+            title = 'Offline Notify';
+            break;
+        case 'message':
+            tip = name + ' is saying now.';
+            title = 'Message Notify';
+            break;
+    }
+    var pop = new Pop(title, tip);
+}
+
+// init user list
+function initUserList(data) {
+    users = data.users;
+    for (var i = 0; i < users.length; i++) {
+        var slElement = $(document.createElement("option"));
+        slElement.attr("value", users[i]);
+        slElement.text(users[i]);
+        $("#usersList").append(slElement);
+    }
+}
+
+// add user in user list
+function addUser(user) {
+    var slElement = $(document.createElement("option"));
+    slElement.attr("value", user);
+    slElement.text(user);
+    $("#usersList").append(slElement);
+}
+
+// remove user from user list
+function removeUser(user) {
+    $("#usersList option").each(
+        function () {
+            if ($(this).val() === user) $(this).remove();
+        });
+}
+
+// set your name
+function setName() {
+    $("#name").text(username);
+}
+
+// show error
+function showError(content) {
+    $("#loginError").text(content);
+    $("#loginError").show();
+}
+
+// show chat panel
+function showChat() {
+    $("#toolbar").show();
+    $("entry").focus();
+    scrollDown(base);
+}
+
 
 
 $(document).ready(function () {
+    observer = {
+        handleCustomerMessage: function(msg) {
+            addMessage(msg.sender, msg.receiver, msg.content);
+            $("#chatHistory").show();            
+        },
+        handleCustomerMessageACK: function(msg) {
+            console.log("handleCustomerMessageACK...");
+        },
+        handleCustomerMessageFailure: function(msg) {
+            console.log("handleCustomerMessageFailure...");
+        },
+        onConnectState: function(state) {
+            if (state == IMService.STATE_CONNECTED) {
+                console.log("im connected");
+            } else if (state == IMService.STATE_CONNECTING) {
+                console.log("im connecting");
+            } else if (state == IMService.STATE_CONNECTFAIL) {
+                console.log("im connect fail");
+            } else if (state == IMService.STATE_UNCONNECTED) {
+                console.log("im unconnected");
+            }
+        }
+    };
 
-    var receiver;
+    var im = new IMService();
+    im.host = host;
+    im.observer = observer;
+    im.customerMessageObserver = observer;
+
     var r = util.getURLParameter('receiver', location.search);
     if (r) {
-        receiver = parseInt(r);
+        receiver = r;
     } else {
         receiver = 0;
     }
-    storeID = receiver;
+    console.log("receiver:" + receiver)
 
     r = util.getURLParameter('sender', location.search);
     if (r) {
-        sender = parseInt(r);
+        sender = r;
     } else {
         sender = 0;
     }
-    uid = sender;
-    console.log("appid:", appID);
-    console.log("uid:", sender);
-    console.log("store id:", storeID);
+    username = sender;
+    uid = sender;    
+    console.log("sender:" + sender)
+    
 
+    addUser(receiver);
     token = util.getCookie("token");
     console.log("token:" + token)
-
-    im.host = host
     im.accessToken = token
     im.start();
 
+
+    setName();
+    showChat();
+    //deal with chat mode.
     $("#entry").keypress(function (e) {
-        if (e.keyCode != 13) return;
+        var target = $("#usersList").val();
+        if (e.keyCode != 13 /* Return */) return;
         var msg = $("#entry").val().replace("\n", "");
         if (!util.isBlank(msg)) {
-            var now = new Date();
-            var obj = {"text": msg};
+            var now = new Date().getTime() / 1000;
+            var obj = {
+                text:msg,
+                name:"test",
+                "app_name":"demo"
+            };
             var textMsg = JSON.stringify(obj);
+
             var message = {
-                customerID:uid, 
-                customerAppID:appID, 
-                storeID:storeID,
-                sellerID:sellerID, 
+                sender:uid, 
+                senderAppID:appID, 
+                receiver:receiver,
+                receiverAppID:receiverAppID, 
                 content: textMsg, 
                 contentObj: obj,
                 msgLocalID:msgLocalID++
             };
             message.outgoing = true;
-            message.timestamp = (now.getTime() / 1000);
+            message.timestamp = now;
 
             if (im.connectState == IMService.STATE_CONNECTED) {
-                im.sendCustomerMessage(message);
-                $("#entry").val("");
-                addMessage(message);
+                im.sendCustomerMessage(message);                
+                $("#entry").val(""); // clear the entry field.
+                if (target != '*' && target != username) {
+                    addMessage(username, target, msg);
+                    $("#chatHistory").show();
+                }
             }
         }
     });

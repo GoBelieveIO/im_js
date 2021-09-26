@@ -138,7 +138,7 @@ def customer_login():
 
 @app.route('/customer')
 def customer():
-    return render_template('customer.html')
+    return render_template('customer_index.html')
 
 
 @app.route('/room/chat')
