@@ -236,7 +236,9 @@ $(document).ready(function () {
             var obj = {
                 text:msg,
                 name:"test",
-                "app_name":"demo"
+                "app_name":"demo",
+                "store_id":7,
+                "store_name":"五湖四海",
             };
             var textMsg = JSON.stringify(obj);
 
